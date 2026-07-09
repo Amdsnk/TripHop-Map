@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, ExternalLink, Music, Layers, Mic, Plus, AlertCircle, Play } from 'lucide-react';
+import { X, ExternalLink, Music, Layers, Mic, Plus, AlertCircle, Play, Loader2, RefreshCw } from 'lucide-react';
 import { type Song, type Artist } from '@/data/artists';
 import { type PlaylistTrack } from '@/data/playlists';
-import { resolveYouTubeId } from '@/utils/youtubeCheck';
+import { resolveYouTubeId, checkYouTubeId, markBrokenId, isBrokenId, findAlternativeYouTubeId } from '@/utils/youtubeCheck';
 import { toast } from 'sonner';
 
 interface Props {
@@ -26,39 +26,96 @@ function isPlaceholderSCUrl(url: string) {
 }
 
 export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Props) {
-  // Resolve: use override ID if one has been saved for this song's original ID
   const resolvedYtId  = song.youtubeId ? resolveYouTubeId(song.youtubeId) : undefined;
   const hasYoutube    = Boolean(resolvedYtId);
   const hasSoundcloud = Boolean(song.soundcloudUrl) && !isPlaceholderSCUrl(song.soundcloudUrl ?? '');
-  const [ytError, setYtError]  = useState(false);
+
+  const [ytError, setYtError]       = useState(false);
+  const [ytChecking, setYtChecking] = useState(false);
+  const [findingAlt, setFindingAlt] = useState(false);
+  const [altYtId, setAltYtId]       = useState<string | null>(null);
+  const [altTitle, setAltTitle]     = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Prevent double-triggering the alt search
+  const altSearchedRef = useRef(false);
 
-  // Reset on song change
-  useEffect(() => { setYtError(false); }, [song.id]);
+  /** Search for a playable alternative from the same artist and update state. */
+  const searchForAlternative = (brokenId: string) => {
+    if (altSearchedRef.current) return;
+    altSearchedRef.current = true;
+    setFindingAlt(true);
+    findAlternativeYouTubeId(artist.songs, brokenId).then(result => {
+      setFindingAlt(false);
+      if (result) {
+        setAltYtId(result.id);
+        setAltTitle(result.title);
+      }
+    });
+  };
 
-  // Detect YouTube embed errors via postMessage (requires enablejsapi + origin)
+  // On mount: if already known broken from this session, skip oEmbed and find alt immediately.
+  // Otherwise run oEmbed pre-check; if it fails, mark broken and find alt.
+  useEffect(() => {
+    if (!resolvedYtId) { setYtError(false); return; }
+
+    // Reset alt state when song changes
+    altSearchedRef.current = false;
+    setAltYtId(null);
+    setAltTitle(null);
+    setYtError(false);
+
+    if (isBrokenId(resolvedYtId)) {
+      setYtError(true);
+      searchForAlternative(resolvedYtId);
+      return;
+    }
+
+    setYtChecking(true);
+    checkYouTubeId(resolvedYtId).then(available => {
+      setYtChecking(false);
+      if (!available) {
+        markBrokenId(resolvedYtId);
+        setYtError(true);
+        searchForAlternative(resolvedYtId);
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedYtId]);
+
+  // Runtime detection: YouTube iframe postMessage error events (codes 101/150 = embed blocked).
   useEffect(() => {
     const handler = (e: MessageEvent) => {
       if (!e.origin.includes('youtube.com')) return;
       try {
         const d = typeof e.data === 'string' ? JSON.parse(e.data) : e.data;
-        // onError codes: 2=bad param, 5=HTML5 error, 100=not found, 101/150=embed blocked
-        if (d?.event === 'onError') setYtError(true);
-        if (d?.event === 'infoDelivery' && d?.info?.error) setYtError(true);
+        const hasError =
+          (d?.event === 'onError') ||
+          (d?.event === 'infoDelivery' && d?.info?.error);
+        if (hasError && resolvedYtId && !ytError) {
+          markBrokenId(resolvedYtId);
+          setYtError(true);
+          searchForAlternative(resolvedYtId);
+        }
       } catch { /* ignore */ }
     };
     window.addEventListener('message', handler);
     return () => window.removeEventListener('message', handler);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resolvedYtId, ytError]);
 
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  const ytEmbedUrl = resolvedYtId
-    ? `https://www.youtube.com/embed/${resolvedYtId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(origin)}`
-    : null;
 
-  const ytWatchUrl   = resolvedYtId ? `https://www.youtube.com/watch?v=${resolvedYtId}` : null;
-  const ytSearchUrl  = `https://www.youtube.com/results?search_query=${encodeURIComponent(artist.name + ' ' + song.title)}`;
-  const scSearchUrl  = `https://soundcloud.com/search?q=${encodeURIComponent(artist.name + ' ' + song.title)}`;
+  // The active ID to embed: alt replacement takes priority over original
+  const activeYtId = altYtId ?? (ytError ? null : resolvedYtId);
+  const ytEmbedUrl = activeYtId
+    ? `https://www.youtube.com/embed/${activeYtId}?autoplay=0&rel=0&modestbranding=1&enablejsapi=1&origin=${encodeURIComponent(origin)}`
+    : null;
+  const ytWatchUrl  = activeYtId ? `https://www.youtube.com/watch?v=${activeYtId}` : null;
+  const ytSearchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(artist.name + ' ' + song.title)}`;
+  const scSearchUrl = `https://soundcloud.com/search?q=${encodeURIComponent(artist.name + ' ' + song.title)}`;
+
+  // Is the embed currently showing a working video?
+  const showingEmbed = Boolean(activeYtId) && !ytChecking && !(ytError && !altYtId);
 
   return (
     <div className="flex flex-col h-full overflow-hidden xerox-border panel-enter">
@@ -130,22 +187,55 @@ export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Pr
         <div className="p-4 border-b border-border">
           <div className="archival-label mb-3">LISTEN</div>
 
-          {/* YouTube embed — shown when ID exists and no error detected */}
-          {hasYoutube && ytEmbedUrl && !ytError && (
+          {/* 1. Loading: oEmbed pre-check */}
+          {hasYoutube && ytChecking && (
+            <div className="w-full mb-2 xerox-border flex items-center justify-center" style={{ height: '200px' }}>
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span className="text-xs font-mono">Memeriksa ketersediaan video…</span>
+              </div>
+            </div>
+          )}
+
+          {/* 2. Loading: searching for alternative after error */}
+          {findingAlt && (
+            <div className="w-full mb-2 xerox-border flex items-center justify-center" style={{ height: '200px' }}>
+              <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                <RefreshCw className="w-5 h-5 animate-spin" />
+                <span className="text-xs font-mono">Mencari video lain dari artis ini…</span>
+              </div>
+            </div>
+          )}
+
+          {/* 3. Alternative-video notice badge */}
+          {altYtId && altTitle && !findingAlt && (
+            <div className="flex items-center gap-1.5 text-xs font-mono text-muted-foreground/70 mb-2 xerox-border px-2 py-1.5">
+              <RefreshCw className="w-3 h-3 flex-shrink-0 text-accent" />
+              <span className="truncate">
+                <span className="text-accent">Lagu lain dari artis ini</span>
+                {' · '}
+                <span className="text-foreground/60">{altTitle}</span>
+              </span>
+            </div>
+          )}
+
+          {/* 4. YouTube embed — original (no error) or replacement (altYtId) */}
+          {ytEmbedUrl && !ytChecking && !findingAlt && (
             <div className="relative w-full mb-2" style={{ paddingBottom: '56.25%' }}>
               <iframe
                 ref={iframeRef}
+                key={activeYtId}
                 src={ytEmbedUrl}
                 className="absolute inset-0 w-full h-full xerox-border"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
-                title={`${song.title} - ${artist.name}`}
+                title={altTitle ? `${altTitle} - ${artist.name}` : `${song.title} - ${artist.name}`}
               />
             </div>
           )}
 
-          {/* YouTube error state — auto-fallback to SoundCloud embed if available */}
-          {hasYoutube && ytError && (
+          {/* 5. Error state — no alt found — fall back to SoundCloud or manual links */}
+          {ytError && !altYtId && !findingAlt && (
             <div className="mb-3">
               {hasSoundcloud ? (
                 <>
@@ -165,14 +255,16 @@ export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Pr
                 <div className="xerox-border p-4 flex flex-col items-center gap-3 text-center">
                   <AlertCircle className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <p className="text-xs text-muted-foreground font-mono mb-1">Video tidak tersedia</p>
-                    <p className="text-xs text-muted-foreground/60 font-mono">Cari versi lain di YouTube atau SoundCloud</p>
+                    <p className="text-xs text-muted-foreground font-mono mb-1">Video tidak tersedia untuk embed</p>
+                    <p className="text-xs text-muted-foreground/60 font-mono">Buka langsung di YouTube</p>
                   </div>
-                  <div className="flex gap-2">
-                    <a href={ytWatchUrl!} target="_blank" rel="noopener noreferrer"
-                      className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-accent hover:border-accent transition-colors">
-                      <Play className="w-3.5 h-3.5" /> Buka YouTube
-                    </a>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    {resolvedYtId && (
+                      <a href={`https://www.youtube.com/watch?v=${resolvedYtId}`} target="_blank" rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-accent hover:border-accent transition-colors">
+                        <Play className="w-3.5 h-3.5" /> Buka YouTube
+                      </a>
+                    )}
                     <a href={scSearchUrl} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-muted-foreground hover:border-accent transition-colors">
                       <Music className="w-3.5 h-3.5" /> SoundCloud
@@ -183,7 +275,7 @@ export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Pr
             </div>
           )}
 
-          {/* No YouTube ID — SoundCloud embed or search fallback */}
+          {/* 6. No YouTube ID — SoundCloud embed or search fallback */}
           {!hasYoutube && (
             <div className="mb-3">
               {hasSoundcloud ? (
@@ -195,94 +287,96 @@ export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Pr
                   title={`${song.title} - ${artist.name} (SoundCloud)`}
                 />
               ) : (
-                <a
-                  href={ytSearchUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 text-xs font-mono xerox-border p-3 text-accent hover:border-accent transition-colors w-full"
-                >
-                  <Play className="w-3.5 h-3.5" /> Cari di YouTube
-                </a>
+                <div className="xerox-border p-4 flex flex-col items-center gap-3 text-center">
+                  <Music className="w-5 h-5 text-muted-foreground/40" />
+                  <p className="text-xs text-muted-foreground font-mono">Belum ada embed tersedia</p>
+                  <div className="flex gap-2 flex-wrap justify-center">
+                    <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-accent hover:border-accent transition-colors">
+                      <Play className="w-3.5 h-3.5" /> Cari di YouTube
+                    </a>
+                    <a href={scSearchUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-muted-foreground hover:border-accent transition-colors">
+                      <Music className="w-3.5 h-3.5" /> Cari di SoundCloud
+                    </a>
+                  </div>
+                </div>
               )}
             </div>
           )}
 
-          {/* Always-visible action row: Open YouTube + SoundCloud */}
-          <div className="flex flex-wrap gap-2">
-            {/* Open YouTube watch link — always show if youtubeId exists */}
-            {hasYoutube && !ytError && ytWatchUrl && (
-              <a
-                href={ytWatchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" /> Buka YouTube
-              </a>
-            )}
-            {/* YouTube search — always show as a secondary option */}
-            {!ytError && (
-              <a
-                href={ytSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors"
-              >
+          {/* Action row — shown whenever embed is visible */}
+          {showingEmbed && (
+            <div className="flex flex-wrap gap-2">
+              {ytWatchUrl && (
+                <a href={ytWatchUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors">
+                  <ExternalLink className="w-3 h-3" /> Buka YouTube
+                </a>
+              )}
+              <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors">
                 <ExternalLink className="w-3 h-3" /> Cari YouTube
               </a>
-            )}
-            {/* SoundCloud */}
-            {hasSoundcloud ? (
-              <a href={song.soundcloudUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors"
-              >
-                <Music className="w-3 h-3" /> SoundCloud
-              </a>
-            ) : (
-              <a href={scSearchUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors"
-              >
-                <Music className="w-3 h-3" /> Cari SoundCloud
-              </a>
-            )}
-          </div>
+              {hasSoundcloud && (
+                <a href={song.soundcloudUrl} target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent hover:text-accent transition-colors">
+                  <Music className="w-3 h-3" /> SoundCloud
+                </a>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Story */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2 flex items-center gap-2">
-            <Music className="w-3 h-3" /> TRACK STORY
+        {(song.story ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2 flex items-center gap-2">
+              <Music className="w-3 h-3" /> TRACK STORY
+            </div>
+            <p className="text-sm text-foreground/80 leading-relaxed">{song.story}</p>
           </div>
-          <p className="text-sm text-foreground/80 leading-relaxed">{song.story}</p>
-        </div>
+        )}
 
         {/* Production Context */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2">PRODUCTION CONTEXT</div>
-          <p className="text-sm text-foreground/70 leading-relaxed">{song.productionContext}</p>
-        </div>
+        {(song.productionContext ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2">PRODUCTION CONTEXT</div>
+            <p className="text-sm text-foreground/70 leading-relaxed">{song.productionContext}</p>
+          </div>
+        )}
 
         {/* Cultural Impact */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2">CULTURAL IMPACT</div>
-          <p className="text-sm text-foreground/70 leading-relaxed">{song.culturalImpact}</p>
-        </div>
+        {(song.culturalImpact ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2">CULTURAL IMPACT</div>
+            <p className="text-sm text-foreground/70 leading-relaxed">{song.culturalImpact}</p>
+          </div>
+        )}
 
         {/* Lyrics Analysis */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2 flex items-center gap-2">
-            <Mic className="w-3 h-3" /> LYRICS ANALYSIS
+        {(song.lyricsAnalysis ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2 flex items-center gap-2">
+              <Mic className="w-3 h-3" /> LYRICS ANALYSIS
+            </div>
+            <p className="text-sm text-foreground/70 leading-relaxed italic">{song.lyricsAnalysis}</p>
           </div>
-          <p className="text-sm text-foreground/70 leading-relaxed italic">{song.lyricsAnalysis}</p>
-        </div>
+        )}
 
         {/* Sampling Sources */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2 flex items-center gap-2">
-            <Layers className="w-3 h-3" /> SAMPLING SOURCES
-          </div>
-          <p className="text-sm text-foreground/70 leading-relaxed font-mono text-xs">{song.samplingSources}</p>
-        </div>
+        {(() => {
+          const src = song.samplingSources;
+          const text = Array.isArray(src) ? src.join(', ') : (src ?? '');
+          return text.trim().length > 0 ? (
+            <div className="p-4 border-b border-border">
+              <div className="archival-label mb-2 flex items-center gap-2">
+                <Layers className="w-3 h-3" /> SAMPLING SOURCES
+              </div>
+              <p className="text-sm text-foreground/70 leading-relaxed font-mono text-xs">{text}</p>
+            </div>
+          ) : null;
+        })()}
 
         {/* Album context */}
         <div className="p-4">

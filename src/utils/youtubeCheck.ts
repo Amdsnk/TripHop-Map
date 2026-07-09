@@ -1,7 +1,10 @@
 /** YouTube ID availability check via oEmbed (no API key required, CORS-safe). */
 
+import type { Song } from '@/data/artists';
+
 const CACHE_KEY = 'yt_availability_cache';
 const OVERRIDE_KEY = 'yt_id_overrides';
+const BROKEN_KEY = 'yt_broken_ids';
 
 type AvailabilityCache = Record<string, { available: boolean; checkedAt: number }>;
 
@@ -102,4 +105,73 @@ export function resolveYouTubeId(id: string): string {
 /** Clear all cached availability results. */
 export function clearAvailabilityCache() {
   sessionStorage.removeItem(CACHE_KEY);
+}
+
+// ── Broken ID store (sessionStorage) ─────────────────────────────────────────
+
+function loadBrokenIds(): Set<string> {
+  try {
+    const arr: string[] = JSON.parse(sessionStorage.getItem(BROKEN_KEY) ?? '[]');
+    return new Set(arr);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveBrokenIds(ids: Set<string>) {
+  try {
+    sessionStorage.setItem(BROKEN_KEY, JSON.stringify([...ids]));
+  } catch { /* ignore */ }
+}
+
+/** Mark a YouTube ID as broken (embed error 101/150) for this session. */
+export function markBrokenId(id: string) {
+  const ids = loadBrokenIds();
+  ids.add(id);
+  saveBrokenIds(ids);
+  // Also mark unavailable in availability cache
+  const cache = loadCache();
+  cache[id] = { available: false, checkedAt: Date.now() };
+  saveCache(cache);
+}
+
+/** Returns true if this ID has been flagged as broken this session. */
+export function isBrokenId(id: string): boolean {
+  return loadBrokenIds().has(id);
+}
+
+// ── Alternative video finder ─────────────────────────────────────────────────
+
+/**
+ * Given the broken youtubeId and a list of songs from the same artist,
+ * finds the first other song whose youtubeId passes the oEmbed check.
+ * Returns { id, title } or null if none found.
+ */
+export async function findAlternativeYouTubeId(
+  songs: Song[],
+  brokenId: string
+): Promise<{ id: string; title: string } | null> {
+  // Collect candidates: distinct IDs, exclude the broken one and already-known broken ones
+  const brokenSet = loadBrokenIds();
+  brokenSet.add(brokenId);
+
+  const seen = new Set<string>();
+  const candidates: { id: string; title: string }[] = [];
+
+  for (const s of songs) {
+    const ytId = s.youtubeId;
+    if (!ytId || brokenSet.has(ytId) || seen.has(ytId)) continue;
+    seen.add(ytId);
+    candidates.push({ id: ytId, title: s.title });
+  }
+
+  // Check each candidate until one works
+  for (const candidate of candidates) {
+    const ok = await checkYouTubeId(candidate.id);
+    if (ok) return candidate;
+    // Mark this one broken too so we don't retry
+    markBrokenId(candidate.id);
+  }
+
+  return null;
 }

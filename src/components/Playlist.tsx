@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { X, Play, Plus, Trash2, Copy, ExternalLink, Music2, ChevronDown, ChevronRight, Share2, Loader2 } from 'lucide-react';
 import { CURATED_PLAYLISTS, type PlaylistTrack, type CuratedPlaylist } from '@/data/playlists';
 import { startSpotifyAuth, exportPlaylistToSpotify } from '@/hooks/useSpotify';
@@ -249,10 +249,12 @@ export default function Playlist({
 
   // Trigger when token arrives (from OAuth redirect)
   const tokenHandledRef = useRef(false);
-  if (spotifyToken && !tokenHandledRef.current) {
-    tokenHandledRef.current = true;
-    handleSpotifyExport(spotifyToken);
-  }
+  useEffect(() => {
+    if (spotifyToken && !tokenHandledRef.current) {
+      tokenHandledRef.current = true;
+      handleSpotifyExport(spotifyToken);
+    }
+  }, [spotifyToken, handleSpotifyExport]);
 
 
   const handleCopyAsText = useCallback(() => {

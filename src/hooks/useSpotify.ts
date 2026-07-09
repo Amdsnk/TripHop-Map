@@ -54,6 +54,7 @@ export async function startSpotifyAuth(): Promise<void> {
 export async function exchangeCodeForToken(code: string): Promise<string> {
   const clientId = import.meta.env.VITE_SPOTIFY_CLIENT_ID as string;
   const redirectUri = import.meta.env.VITE_SPOTIFY_REDIRECT_URI as string;
+  if (!clientId) throw new Error('VITE_SPOTIFY_CLIENT_ID not set');
   const verifier = sessionStorage.getItem(VERIFIER_KEY);
   if (!verifier) throw new Error('Missing code verifier — restart auth flow');
 

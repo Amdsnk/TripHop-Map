@@ -8,7 +8,8 @@
     "includes": [
       "src/**/*.{js,jsx,ts,tsx,css,scss}",
       "tailwind.config.js"
-    ]
+    ],
+    "maxSize": 2097152
   },
   "linter": {
     "enabled": true,
@@ -37,7 +38,9 @@
   },
   "overrides": [
     {
-      "includes": ["tailwind.config.js"],
+      "includes": [
+        "tailwind.config.js"
+      ],
       "linter": {
         "rules": {
           "style": {

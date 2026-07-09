@@ -2,7 +2,7 @@ export interface PlaylistTrack {
   id: string;
   title: string;
   artist: string;
-  album: string;
+  album?: string;
   year: number;
   youtubeId?: string;
   mood: string[];

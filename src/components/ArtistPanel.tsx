@@ -59,39 +59,53 @@ export default function ArtistPanel({ artist, onClose, onSelectSong, onSelectArt
 
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto min-h-0">
-        {/* Biography */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2">BIOGRAPHY</div>
-          <p className="text-sm text-foreground/80 leading-relaxed">
-            {showFullBio ? (artist.biography ?? '') : (artist.biography ?? '').slice(0, 280) + ((artist.biography ?? '').length > 280 ? '…' : '')}
-          </p>
-          {(artist.biography ?? '').length > 280 && (
-            <button
-              onClick={() => setShowFullBio(!showFullBio)}
-              className="mt-2 text-xs text-accent hover:text-accent-foreground flex items-center gap-1 transition-colors"
-            >
-              {showFullBio ? <><ChevronUp className="w-3 h-3" /> COLLAPSE</> : <><ChevronDown className="w-3 h-3" /> READ MORE</>}
-            </button>
-          )}
-        </div>
+        {/* Biography — falls back to artist.description if no long-form biography */}
+        {(() => {
+          const bio = (artist.biography ?? '').trim().length > 0
+            ? (artist.biography ?? '')
+            : (artist.description ?? '').trim();
+          if (!bio) return null;
+          return (
+            <div className="p-4 border-b border-border">
+              <div className="archival-label mb-2">BIOGRAPHY</div>
+              <p className="text-sm text-foreground/80 leading-relaxed">
+                {showFullBio ? bio : bio.slice(0, 280) + (bio.length > 280 ? '…' : '')}
+              </p>
+              {bio.length > 280 && (
+                <button
+                  onClick={() => setShowFullBio(!showFullBio)}
+                  className="mt-2 text-xs text-accent hover:text-accent-foreground flex items-center gap-1 transition-colors"
+                >
+                  {showFullBio ? <><ChevronUp className="w-3 h-3" /> COLLAPSE</> : <><ChevronDown className="w-3 h-3" /> READ MORE</>}
+                </button>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Historical Significance */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2">HISTORICAL SIGNIFICANCE</div>
-          <p className="text-sm text-foreground/70 leading-relaxed">{artist.historicalSignificance}</p>
-        </div>
+        {(artist.historicalSignificance ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2">HISTORICAL SIGNIFICANCE</div>
+            <p className="text-sm text-foreground/70 leading-relaxed">{artist.historicalSignificance}</p>
+          </div>
+        )}
 
         {/* Formation */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2">FORMATION</div>
-          <p className="text-sm text-foreground/70 leading-relaxed">{artist.formationStory}</p>
-        </div>
+        {(artist.formationStory ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2">FORMATION</div>
+            <p className="text-sm text-foreground/70 leading-relaxed">{artist.formationStory}</p>
+          </div>
+        )}
 
         {/* Trip-hop Influence */}
-        <div className="p-4 border-b border-border">
-          <div className="archival-label mb-2">INFLUENCE ON TRIP-HOP</div>
-          <p className="text-sm text-foreground/70 leading-relaxed">{artist.tripHopInfluence}</p>
-        </div>
+        {(artist.tripHopInfluence ?? '').trim().length > 0 && (
+          <div className="p-4 border-b border-border">
+            <div className="archival-label mb-2">INFLUENCE ON TRIP-HOP</div>
+            <p className="text-sm text-foreground/70 leading-relaxed">{artist.tripHopInfluence}</p>
+          </div>
+        )}
 
         {/* Albums */}
         {(artist.albums ?? []).length > 0 && (
@@ -137,10 +151,10 @@ export default function ArtistPanel({ artist, onClose, onSelectSong, onSelectArt
         )}
 
         {/* Tracks */}
-        {artist.songs.length > 0 && (
-          <div className="p-4 border-b border-border">
-            <div className="archival-label mb-3 flex items-center justify-between gap-2">
-              <span className="flex items-center gap-2"><Music className="w-3 h-3" /> KEY TRACKS</span>
+        <div className="p-4 border-b border-border">
+          <div className="archival-label mb-3 flex items-center justify-between gap-2">
+            <span className="flex items-center gap-2"><Music className="w-3 h-3" /> KEY TRACKS</span>
+            {artist.songs.length > 0 && (
               <button
                 onClick={() => {
                   artist.songs.forEach(song => {
@@ -163,7 +177,14 @@ export default function ArtistPanel({ artist, onClose, onSelectSong, onSelectArt
                 <Plus className="w-2.5 h-2.5" />
                 <span className="font-mono">ADD ALL</span>
               </button>
+            )}
+          </div>
+          {artist.songs.length === 0 ? (
+            <div className="flex flex-col items-center gap-2 py-4 text-center">
+              <Music className="w-5 h-5 text-muted-foreground/40" />
+              <p className="text-xs font-mono text-muted-foreground/60">Belum ada data lagu untuk artis ini</p>
             </div>
+          ) : (
             <div className="space-y-1">
               {artist.songs.map(song => (
                 <div key={song.id} className="flex items-stretch gap-0">
@@ -204,8 +225,8 @@ export default function ArtistPanel({ artist, onClose, onSelectSong, onSelectArt
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Collaborations */}
         {(artist.keyCollaborations ?? []).length > 0 && (

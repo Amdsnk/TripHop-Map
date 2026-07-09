@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Map, Compass, Dna, Radio, Volume2, VolumeX, ListMusic, Music, BookOpen, ShieldCheck } from 'lucide-react';
+import { Map, Compass, Dna, Radio, Volume2, VolumeX, ListMusic, Music, BookOpen, SlidersHorizontal, X, Search, Users } from 'lucide-react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import BackgroundCanvas from '@/components/BackgroundCanvas';
@@ -14,17 +14,22 @@ import DeepCuts from '@/components/DeepCuts';
 import Playlist, { encodePlaylistToHash, decodePlaylistFromHash } from '@/components/Playlist';
 import SongsDiscovery from '@/components/SongsDiscovery';
 import WikiPanel from '@/components/WikiPanel';
-import YouTubeAuditPanel from '@/components/YouTubeAuditPanel';
+import ArtistSearch from '@/components/ArtistSearch';
+import ArtistList from '@/components/ArtistList';
 import { type Artist, type Song, type MoodTag, type EraId, ARTISTS } from '@/data/artists';
-import { type PlaylistTrack } from '@/data/playlists';
+import { type PlaylistTrack, CURATED_PLAYLISTS } from '@/data/playlists';
 import { discoverSimilar } from '@/lib/recommend';
 import { useVinylCrackle } from '@/hooks/useVinylCrackle';
 import { exchangeCodeForToken } from '@/hooks/useSpotify';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { toast } from 'sonner';
 
-type RightPanel = 'artist' | 'song' | 'geo' | 'dna' | 'deepcuts' | 'playlist' | 'songs' | 'wiki' | 'audit' | null;
+type RightPanel = 'artist' | 'song' | 'geo' | 'dna' | 'deepcuts' | 'playlist' | 'songs' | 'wiki' | 'search' | 'artistlist' | null;
+
+const TOTAL_SONGS = ARTISTS.reduce((sum, a) => sum + (a.songs?.length ?? 0), 0);
 
 export default function App() {
+  const isMobile = useIsMobile();
   const [selectedArtist, setSelectedArtist] = useState<Artist | null>(null);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
   const [rightPanel, setRightPanel] = useState<RightPanel>(null);
@@ -35,10 +40,10 @@ export default function App() {
   const [showIntro, setShowIntro] = useState(true);
   const [similarArtists, setSimilarArtists] = useState<Artist[]>([]);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [sharedPlaylistLoaded, setSharedPlaylistLoaded] = useState(false);
   const [spotifyToken, setSpotifyToken] = useState<string | undefined>(undefined);
   const [playlistQueue, setPlaylistQueue] = useState<PlaylistTrack[]>(() => {
-    // Restore playlist from URL hash OR from sessionStorage (post-Spotify OAuth)
     try {
       const stored = sessionStorage.getItem('spotify_pending_queue');
       if (stored) return JSON.parse(stored) as PlaylistTrack[];
@@ -56,14 +61,19 @@ export default function App() {
 
   const { createCrackle, playUIClick, stop } = useVinylCrackle();
 
-  // Handle Spotify OAuth callback (?code=...&state=...)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
     const state = params.get('state');
     if (code && state) {
-      // Clean URL immediately
+      const storedState = sessionStorage.getItem('spotify_auth_state');
       history.replaceState(null, '', window.location.pathname);
+      if (!storedState || storedState !== state) {
+        sessionStorage.removeItem('spotify_auth_state');
+        sessionStorage.removeItem('spotify_code_verifier');
+        toast.error('Spotify auth failed: state mismatch — please try again.');
+        return;
+      }
       exchangeCodeForToken(code)
         .then(token => {
           setSpotifyToken(token);
@@ -77,7 +87,6 @@ export default function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Show toast when a shared playlist was loaded from URL
   useEffect(() => {
     try {
       const hash = window.location.hash;
@@ -86,7 +95,6 @@ export default function App() {
         const decoded = decodePlaylistFromHash(match[1]);
         if (decoded.length > 0) {
           setSharedPlaylistLoaded(true);
-          // Clear the hash so repeated loads don't re-trigger
           history.replaceState(null, '', window.location.pathname + window.location.search);
           setTimeout(() => {
             toast.success(`Shared playlist loaded — ${decoded.length} track${decoded.length !== 1 ? 's' : ''}`, {
@@ -200,57 +208,68 @@ export default function App() {
       <div className="fixed inset-0 overflow-hidden bg-background" style={{ fontFamily: "'Space Mono', monospace" }}>
         <BackgroundCanvas />
 
-        {/* INTRO */}
         {showIntro && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/95">
-            <div className="text-center max-w-lg px-8 panel-enter">
-              <div className="archival-label text-muted-foreground mb-8 tracking-widest">
-                ▓ ARCHIVE SYSTEM v0.2 — COMPLETE DATABASE ▓
+            <div className="text-center max-w-lg px-6 md:px-8 panel-enter">
+              <div className="archival-label text-muted-foreground mb-4 md:mb-8 tracking-widest">
+                ▓ ARCHIVE SYSTEM v0.6 — COMPLETE DATABASE ▓
               </div>
-              <h1 className="text-4xl font-bold text-foreground text-glow leading-tight mb-2" style={{ letterSpacing: '-0.03em' }}>
+              <h1 className="text-2xl md:text-4xl font-bold text-foreground text-glow leading-tight mb-2" style={{ letterSpacing: '-0.03em' }}>
                 TRIP-HOP<br />ARCHIVE MAP
               </h1>
               <div className="text-sm text-muted-foreground mb-2 font-mono">1980 — PRESENT</div>
-              <div className="w-16 h-px bg-accent mx-auto mb-6" />
+              <div className="w-16 h-px bg-accent mx-auto mb-4 md:mb-6" />
               <p className="text-sm text-foreground/60 leading-relaxed mb-2">
-                {ARTISTS.length} artists. 5 curated playlists. An infinite map of influence.
+                {ARTISTS.length} artists. {TOTAL_SONGS} songs. {CURATED_PLAYLISTS.length} curated playlists.
               </p>
-              <p className="text-xs text-muted-foreground leading-relaxed mb-8">
-                Drag to explore. Click nodes to open archives. Build your own playlist.
+              <p className="text-xs text-muted-foreground leading-relaxed mb-6 md:mb-8">
+                {isMobile ? 'Tap & drag to explore. Tap nodes to open archives.' : 'Drag to explore. Click nodes to open archives. Build your own playlist.'}
               </p>
               <button onClick={handleEnter} className="xerox-border border-accent px-8 py-3 text-sm font-mono text-accent hover:bg-accent/10 transition-all glow-soft">
                 ENTER ARCHIVE
               </button>
-              <div className="mt-4 text-xs text-muted-foreground/40 font-mono">PRESS ENTER OR SPACE</div>
+              <div className="mt-4 text-xs text-muted-foreground/40 font-mono hidden md:block">PRESS ENTER OR SPACE</div>
             </div>
           </div>
         )}
 
-        {/* MAIN LAYOUT */}
         {!showIntro && (
           <div className="fixed inset-0 flex flex-col">
-            {/* TOP BAR */}
-            <div className="flex-shrink-0 flex items-center justify-between px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm z-30">
-              <div className="flex items-center gap-4">
-                <button onClick={() => setSidebarCollapsed(p => !p)} className="text-muted-foreground hover:text-foreground transition-colors">
+            {/* ── Top header ── */}
+            <div className="flex-shrink-0 flex items-center justify-between px-3 md:px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm z-30">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                {/* Desktop sidebar toggle */}
+                <button
+                  onClick={() => setSidebarCollapsed(p => !p)}
+                  className="hidden md:block text-muted-foreground hover:text-foreground transition-colors"
+                >
                   <span className="text-xs font-mono">≡</span>
                 </button>
-                <div>
-                  <div className="text-xs font-bold font-mono text-foreground tracking-tight">TRIP-HOP ARCHIVE MAP</div>
-                  <div className="archival-label text-accent" style={{ fontSize: '0.55rem' }}>
+                {/* Mobile filter drawer toggle */}
+                <button
+                  onClick={() => setMobileSidebarOpen(p => !p)}
+                  className="md:hidden text-muted-foreground hover:text-foreground transition-colors p-1"
+                >
+                  <SlidersHorizontal className="w-4 h-4" />
+                </button>
+                <div className="min-w-0">
+                  <div className="text-xs font-bold font-mono text-foreground tracking-tight truncate">TRIP-HOP ARCHIVE</div>
+                  <div className="archival-label text-accent hidden md:block" style={{ fontSize: '0.55rem' }}>
                     {activeEra ? ERA_DESCRIPTION[activeEra] : `${ARTISTS.length} ARTISTS · 1980 — PRESENT · BRISTOL UNDERGROUND`}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-1">
+              {/* Panel buttons — icons only on mobile, icons+labels on desktop */}
+              <div className="flex items-center gap-1 shrink-0">
                 {([
                   { icon: <Map className="w-3.5 h-3.5" />, label: 'GEO', panel: 'geo' as RightPanel },
                   { icon: <Dna className="w-3.5 h-3.5" />, label: 'DNA', panel: 'dna' as RightPanel, disabled: !selectedArtist },
                   { icon: <Radio className="w-3.5 h-3.5" />, label: 'CUTS', panel: 'deepcuts' as RightPanel },
                   { icon: <Music className="w-3.5 h-3.5" />, label: 'SONGS', panel: 'songs' as RightPanel },
                   { icon: <BookOpen className="w-3.5 h-3.5" />, label: 'WIKI', panel: 'wiki' as RightPanel },
-                  { icon: <ShieldCheck className="w-3.5 h-3.5" />, label: 'AUDIT', panel: 'audit' as RightPanel },
+                  { icon: <Search className="w-3.5 h-3.5" />, label: 'CARI', panel: 'search' as RightPanel },
+                  { icon: <Users className="w-3.5 h-3.5" />, label: 'ARTIS', panel: 'artistlist' as RightPanel },
                   {
                     icon: (
                       <div className="relative">
@@ -270,7 +289,7 @@ export default function App() {
                     key={label}
                     onClick={() => !disabled && openPanel(panel)}
                     disabled={disabled}
-                    className={`flex items-center gap-1 px-2 py-1 xerox-border text-xs font-mono transition-all ${
+                    className={`flex items-center gap-1 px-1.5 md:px-2 py-1 xerox-border text-xs font-mono transition-all ${
                       rightPanel === panel
                         ? 'border-accent text-accent bg-accent/10'
                         : disabled
@@ -286,18 +305,62 @@ export default function App() {
 
                 <button
                   onClick={toggleAudio}
-                  className="flex items-center gap-1 px-2 py-1 xerox-border text-xs font-mono border-border text-muted-foreground hover:border-accent/50 hover:text-foreground transition-all"
+                  className="flex items-center gap-1 px-1.5 md:px-2 py-1 xerox-border text-xs font-mono border-border text-muted-foreground hover:border-accent/50 hover:text-foreground transition-all"
                 >
                   {audioEnabled ? <Volume2 className="w-3.5 h-3.5" /> : <VolumeX className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
 
-            {/* BODY */}
+            {/* ── Mobile filter drawer (overlay) ── */}
+            {mobileSidebarOpen && (
+              <div className="fixed inset-0 z-50 md:hidden">
+                <div className="absolute inset-0 bg-background/70 backdrop-blur-sm" onClick={() => setMobileSidebarOpen(false)} />
+                <div className="absolute left-0 top-0 bottom-0 w-72 bg-background border-r border-border flex flex-col overflow-y-auto">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+                    <span className="archival-label text-foreground">FILTERS</span>
+                    <button onClick={() => setMobileSidebarOpen(false)} className="text-muted-foreground hover:text-foreground transition-colors">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <div className="p-4 flex-1 space-y-5">
+                    <TimelineScrubber yearRange={yearRange} onYearRangeChange={setYearRange} activeEra={activeEra} onEraChange={handleEraChange} />
+                    <div className="w-full h-px bg-border" />
+                    <MoodFilter activeMoods={activeMoods} onToggleMood={handleToggleMood} />
+                    <div className="border-t border-border pt-3">
+                      <div className="archival-label mb-1">VISIBLE NODES</div>
+                      <div className="text-lg font-bold font-mono text-accent text-glow">{visibleCount}</div>
+                      <div className="text-xs text-muted-foreground">of {ARTISTS.length} total</div>
+                    </div>
+                    {similarArtists.length > 0 && (
+                      <div className="border-t border-border pt-3">
+                        <div className="archival-label mb-2 flex items-center gap-1">
+                          <Compass className="w-3 h-3" /> DISCOVER SIMILAR
+                        </div>
+                        <div className="space-y-1">
+                          {similarArtists.map(a => (
+                            <button
+                              key={a.id}
+                              onClick={() => { handleSelectArtist(a); setMobileSidebarOpen(false); }}
+                              className="w-full text-left px-2 py-1 xerox-border hover:border-accent/50 transition-all group"
+                            >
+                              <div className="text-xs font-mono text-foreground/70 group-hover:text-foreground transition-colors truncate">{a.name}</div>
+                              <div className="text-xs text-muted-foreground" style={{ fontSize: '0.6rem' }}>{a.era}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Main content row ── */}
             <div className="flex-1 flex overflow-hidden min-h-0">
-              {/* LEFT SIDEBAR */}
+              {/* Desktop sidebar */}
               {!sidebarCollapsed && (
-                <div className="flex-shrink-0 w-52 border-r border-border bg-background/60 backdrop-blur-sm z-20 overflow-y-auto flex flex-col">
+                <div className="hidden md:flex flex-shrink-0 w-52 border-r border-border bg-background/60 backdrop-blur-sm z-20 overflow-y-auto flex-col">
                   <div className="p-3 flex-1 space-y-5">
                     <TimelineScrubber yearRange={yearRange} onYearRangeChange={setYearRange} activeEra={activeEra} onEraChange={handleEraChange} />
                     <div className="w-full h-px bg-border" />
@@ -335,7 +398,7 @@ export default function App() {
                 </div>
               )}
 
-              {/* MAP */}
+              {/* Map canvas */}
               <div className="flex-1 relative min-w-0 overflow-hidden">
                 <GenreMapCanvas
                   activeMoods={activeMoods}
@@ -346,7 +409,7 @@ export default function App() {
                 />
               </div>
 
-              {/* RIGHT PANEL — desktop: side panel; mobile: full-screen overlay */}
+              {/* Right panel — full-screen overlay on mobile, sidebar on desktop */}
               {rightPanel && (
                 <div className="fixed inset-0 md:static md:inset-auto md:flex-shrink-0 md:w-96 border-l border-border bg-background/95 md:bg-background/90 backdrop-blur-sm z-40 md:z-20 overflow-hidden flex flex-col">
                   {rightPanel === 'artist' && selectedArtist && (
@@ -379,7 +442,7 @@ export default function App() {
                     <SoundDNA artist={selectedArtist} onClose={() => setRightPanel(null)} />
                   )}
                   {rightPanel === 'deepcuts' && (
-                    <DeepCuts onClose={() => setRightPanel(null)} />
+                    <DeepCuts onClose={() => setRightPanel(null)} onAddToPlaylist={handleAddToPlaylist} />
                   )}
                   {rightPanel === 'playlist' && (
                     <Playlist
@@ -415,29 +478,57 @@ export default function App() {
                   {rightPanel === 'wiki' && (
                     <WikiPanel onClose={() => setRightPanel(null)} />
                   )}
-                  {rightPanel === 'audit' && (
-                    <YouTubeAuditPanel onClose={() => setRightPanel(null)} />
+                  {rightPanel === 'search' && (
+                    <ArtistSearch
+                      onClose={() => setRightPanel(null)}
+                      onSelectArtist={(artist) => { handleSelectArtist(artist); setRightPanel('artist'); }}
+                    />
+                  )}
+                  {rightPanel === 'artistlist' && (
+                    <ArtistList
+                      onClose={() => setRightPanel(null)}
+                      onSelectArtist={(artist) => { handleSelectArtist(artist); setRightPanel('artist'); }}
+                    />
                   )}
                 </div>
               )}
             </div>
 
-            {/* STATUS BAR */}
-            <div className="flex-shrink-0 flex items-center justify-between px-4 py-1 border-t border-border bg-background/60 backdrop-blur-sm z-30">
-              <div className="flex items-center gap-4">
-                <div className="archival-label">
-                  {selectedArtist ? `SELECTED: ${selectedArtist.name.toUpperCase()}` : 'CLICK NODE TO EXPLORE'}
+            {/* ── Bottom status bar ── */}
+            <div className="flex-shrink-0 flex items-center justify-between px-3 md:px-4 py-1 border-t border-border bg-background/60 backdrop-blur-sm z-30">
+              <div className="flex items-center gap-2 md:gap-4 min-w-0">
+                <div className="archival-label truncate">
+                  {selectedArtist ? `▶ ${selectedArtist.name.toUpperCase()}` : 'TAP NODE TO EXPLORE'}
                 </div>
                 {activeMoods.length > 0 && (
-                  <div className="archival-label text-accent">FILTER: {activeMoods.map(m => m.toUpperCase()).join(' + ')}</div>
+                  <div className="archival-label text-accent hidden md:block">FILTER: {activeMoods.map(m => m.toUpperCase()).join(' + ')}</div>
                 )}
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 md:gap-3 shrink-0">
                 {playlistQueue.length > 0 && (
-                  <div className="archival-label text-accent">{playlistQueue.length} IN PLAYLIST</div>
+                  <div className="archival-label text-accent">{playlistQueue.length} IN LIST</div>
                 )}
-                <div className="archival-label text-muted-foreground/50">
+                <div className="archival-label text-muted-foreground/50 hidden md:block">
                   {audioEnabled ? '◉ VINYL CRACKLE' : '○ VINYL CRACKLE'}
+                </div>
+                {/* Contact — always visible on all screen sizes */}
+                <div className="archival-label text-muted-foreground/70 flex flex-wrap items-center gap-1" style={{ fontSize: '0.45rem' }}>
+                  <span className="hidden md:inline">BUILT WITH PASSION BY{' '}</span>
+                  <a
+                    href="https://instagram.com/amandaangelasoenoko"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-accent hover:text-accent/80 transition-colors"
+                  >
+                    AMANDA ANGELA SOENOKO
+                  </a>
+                  <span>{' '}·{' '}</span>
+                  <a
+                    href="mailto:angela.soenoko@gmail.com"
+                    className="text-muted-foreground/70 hover:text-foreground transition-colors"
+                  >
+                    angela.soenoko@gmail.com
+                  </a>
                 </div>
               </div>
             </div>

@@ -13,21 +13,30 @@ export interface MapState {
 
 const FRICTION = 0.88;
 const MIN_SCALE = 0.25;
-const MAX_SCALE = 2.5;
+const MAX_SCALE = 4.0;
+
+export interface InitialTransform {
+  offsetX: number;
+  offsetY: number;
+  scale: number;
+}
 
 export function useMapPhysics(
   canvasRef: React.RefObject<HTMLCanvasElement | null>,
-  onUpdate: (state: MapState) => void
+  onUpdate: (state: MapState) => void,
+  initialTransform: InitialTransform = { offsetX: 0, offsetY: 0, scale: 1 }
 ) {
   const state = useRef<MapState>({
-    offsetX: 0,
-    offsetY: 0,
-    scale: 1,
+    offsetX: initialTransform.offsetX,
+    offsetY: initialTransform.offsetY,
+    scale: initialTransform.scale,
     isDragging: false,
     lastMouse: { x: 0, y: 0 },
     velocity: { x: 0, y: 0 },
   });
   const rafRef = useRef<number>(0);
+  // pinch tracking
+  const pinchRef = useRef<{ dist: number; midX: number; midY: number } | null>(null);
 
   const getState = useCallback(() => state.current, []);
 
@@ -50,6 +59,7 @@ export function useMapPhysics(
     return () => cancelAnimationFrame(rafRef.current);
   }, [animate]);
 
+  // ── Mouse events ─────────────────────────────────────────────────────────
   const handleMouseDown = useCallback((e: MouseEvent) => {
     const s = state.current;
     s.isDragging = true;
@@ -90,6 +100,73 @@ export function useMapPhysics(
     onUpdate({ ...s });
   }, [canvasRef, onUpdate]);
 
+  // ── Touch events (pan + pinch-zoom) ─────────────────────────────────────
+  const handleTouchStart = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    const s = state.current;
+    s.velocity = { x: 0, y: 0 };
+    if (e.touches.length === 1) {
+      s.isDragging = true;
+      s.lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      pinchRef.current = null;
+    } else if (e.touches.length === 2) {
+      s.isDragging = false;
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      pinchRef.current = {
+        dist: Math.hypot(dx, dy),
+        midX: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        midY: (e.touches[0].clientY + e.touches[1].clientY) / 2,
+      };
+    }
+  }, []);
+
+  const handleTouchMove = useCallback((e: TouchEvent) => {
+    e.preventDefault();
+    const s = state.current;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    if (e.touches.length === 1 && s.isDragging) {
+      const dx = e.touches[0].clientX - s.lastMouse.x;
+      const dy = e.touches[0].clientY - s.lastMouse.y;
+      s.velocity = { x: dx * 0.8, y: dy * 0.8 };
+      s.offsetX += dx;
+      s.offsetY += dy;
+      s.lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      onUpdate({ ...s });
+    } else if (e.touches.length === 2 && pinchRef.current) {
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const newDist = Math.hypot(dx, dy);
+      const midX = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const midY = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      const rect = canvas.getBoundingClientRect();
+      const pivotX = midX - rect.left;
+      const pivotY = midY - rect.top;
+      const ratio = newDist / (pinchRef.current.dist || 1);
+      const newScale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, s.scale * ratio));
+      const scaleDiff = newScale / s.scale;
+      s.offsetX = pivotX - scaleDiff * (pivotX - s.offsetX);
+      s.offsetY = pivotY - scaleDiff * (pivotY - s.offsetY);
+      s.scale = newScale;
+      pinchRef.current = { dist: newDist, midX, midY };
+      onUpdate({ ...s });
+    }
+  }, [canvasRef, onUpdate]);
+
+  const handleTouchEnd = useCallback((e: TouchEvent) => {
+    if (e.touches.length === 0) {
+      state.current.isDragging = false;
+      pinchRef.current = null;
+    } else if (e.touches.length === 1) {
+      // One finger lifted from two-finger gesture — restart single pan
+      pinchRef.current = null;
+      state.current.isDragging = true;
+      state.current.lastMouse = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    }
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -97,13 +174,20 @@ export function useMapPhysics(
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     canvas.addEventListener('wheel', handleWheel, { passive: false });
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
     return () => {
       canvas.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
       canvas.removeEventListener('wheel', handleWheel);
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
     };
-  }, [canvasRef, handleMouseDown, handleMouseMove, handleMouseUp, handleWheel]);
+  }, [canvasRef, handleMouseDown, handleMouseMove, handleMouseUp, handleWheel,
+      handleTouchStart, handleTouchMove, handleTouchEnd]);
 
   const centerOn = useCallback((wx: number, wy: number, targetScale = 1.2) => {
     const canvas = canvasRef.current;
@@ -116,5 +200,14 @@ export function useMapPhysics(
     onUpdate({ ...s });
   }, [canvasRef, onUpdate]);
 
-  return { getState, centerOn };
+  const setTransform = useCallback((transform: Partial<InitialTransform>) => {
+    const s = state.current;
+    if (transform.offsetX !== undefined) s.offsetX = transform.offsetX;
+    if (transform.offsetY !== undefined) s.offsetY = transform.offsetY;
+    if (transform.scale !== undefined) s.scale = Math.min(MAX_SCALE, Math.max(MIN_SCALE, transform.scale));
+    s.velocity = { x: 0, y: 0 };
+    onUpdate({ ...s });
+  }, [onUpdate]);
+
+  return { getState, centerOn, setTransform };
 }

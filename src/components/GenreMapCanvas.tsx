@@ -1,6 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { ARTISTS, ERA_NODES, type Artist, type MoodTag, type EraId } from '@/data/artists';
 import { useMapPhysics } from '@/hooks/useMapPhysics';
+import { computeLayoutPositions } from '@/lib/layoutArtists';
+
+const INITIAL_TRANSFORM = { offsetX: -300, offsetY: -100, scale: 0.85 };
+
+// Compute stable force-directed positions once at module load
+const LAYOUT_POS = computeLayoutPositions(ARTISTS);
 
 // Image cache for artist node thumbnails
 const imageCache = new Map<string, HTMLImageElement | null>();
@@ -32,9 +38,33 @@ interface NodeHover {
 
 export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSelectArtist, selectedArtistId }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  // React state — used for event handlers (hit-detection) and the tooltip UI
   const [mapState, setMapState] = useState({ offsetX: -300, offsetY: -100, scale: 0.85 });
   const [hoveredNode, setHoveredNode] = useState<NodeHover | null>(null);
+
+  // ─── Refs that the draw loop reads — NEVER cause RAF to restart ────────────
+  // These are kept in sync with state/props on every render (before any effects).
+  const mapStateRef = useRef(mapState);
+  const hoveredNodeRef = useRef<NodeHover | null>(null);
+  const selectedArtistIdRef = useRef<string | null>(selectedArtistId);
+  const activeMoodsRef = useRef(activeMoods);
+  const activeEraRef = useRef<EraId | null>(activeEra);
+  const yearRangeRef = useRef(yearRange);
+
+  // Sync refs with current state/props on every render
+  mapStateRef.current = mapState;
+  hoveredNodeRef.current = hoveredNode;
+  selectedArtistIdRef.current = selectedArtistId;
+  activeMoodsRef.current = activeMoods;
+  activeEraRef.current = activeEra;
+  yearRangeRef.current = yearRange;
+  // ──────────────────────────────────────────────────────────────────────────
+
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cursorRef = useRef<string>('grab');
   const nodePositionsRef = useRef<Map<string, { wx: number; wy: number }>>(new Map());
   const glowTimeRef = useRef(0);
   const rafRef = useRef<number>(0);
@@ -50,12 +80,20 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     return () => { cancelled = true; };
   }, []);
 
+  // Set initial cursor via document.body — completely outside React's reach
+  useEffect(() => {
+    document.body.style.cursor = 'grab';
+    return () => { document.body.style.cursor = ''; };
+  }, []);
+
   const handleUpdate = useCallback((s: { offsetX: number; offsetY: number; scale: number }) => {
     setMapState({ offsetX: s.offsetX, offsetY: s.offsetY, scale: s.scale });
   }, []);
 
-  const { centerOn } = useMapPhysics(canvasRef, handleUpdate);
+  const { centerOn, setTransform } = useMapPhysics(canvasRef, handleUpdate, INITIAL_TRANSFORM);
 
+  // These stay React-state-based because they're only used inside event handlers,
+  // where we have a synchronous mouse position and need the latest transform.
   const worldToScreen = useCallback((wx: number, wy: number) => ({
     sx: wx * mapState.scale + mapState.offsetX,
     sy: wy * mapState.scale + mapState.offsetY,
@@ -65,42 +103,52 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     wx: (sx - mapState.offsetX) / mapState.scale,
     wy: (sy - mapState.offsetY) / mapState.scale,
   }), [mapState]);
+  void screenToWorld; // keep for future use
 
-  const isArtistVisible = useCallback((artist: Artist) => {
-    if (activeEra && artist.era !== activeEra) return false;
-    const artistYear = artist.albums?.[0]?.year ?? 1990;
-    if (artistYear < yearRange[0] || artistYear > yearRange[1]) return false;
-    if (activeMoods.length > 0 && !(artist.mood ?? []).some(m => activeMoods.includes(m))) return false;
-    return true;
-  }, [activeEra, yearRange, activeMoods]);
+  // ─── Draw helpers — stable [] deps, read from refs ─────────────────────────
+  // Because these never change reference, the main draw useEffect can have []
+  // deps and the RAF loop NEVER gets cancelled + restarted on state changes.
 
   const drawInfluenceLine = useCallback((ctx: CanvasRenderingContext2D, fromArtist: Artist, toId: string, glowT: number) => {
+    const { scale, offsetX, offsetY } = mapStateRef.current;
+    const wts = (wx: number, wy: number) => ({ sx: wx * scale + offsetX, sy: wy * scale + offsetY });
+    const selectedId = selectedArtistIdRef.current;
+    const era = activeEraRef.current;
+    const yr = yearRangeRef.current;
+    const fromPos = LAYOUT_POS.get(fromArtist.id) ?? { x: fromArtist.x, y: fromArtist.y };
+    const moods = activeMoodsRef.current;
+
+    const isVisible = (a: Artist) => {
+      if (era && a.era !== era) return false;
+      const y = a.albums?.[0]?.year ?? 1990;
+      if (y < yr[0] || y > yr[1]) return false;
+      if (moods.length > 0 && !(a.mood ?? []).some(m => moods.includes(m))) return false;
+      return true;
+    };
+
     const toArtist = ARTISTS.find(a => a.id === toId);
     if (!toArtist) return;
-    if (!isArtistVisible(fromArtist) || !isArtistVisible(toArtist)) return;
+    if (!isVisible(fromArtist) || !isVisible(toArtist)) return;
 
-    const { sx: x1, sy: y1 } = worldToScreen(fromArtist.x, fromArtist.y);
-    const { sx: x2, sy: y2 } = worldToScreen(toArtist.x, toArtist.y);
+    const { sx: x1, sy: y1 } = wts(fromPos.x, fromPos.y);
+    const toPos = LAYOUT_POS.get(toArtist.id) ?? { x: toArtist.x, y: toArtist.y };
+    const { sx: x2, sy: y2 } = wts(toPos.x, toPos.y);
 
-    const isSelected = selectedArtistId === fromArtist.id || selectedArtistId === toArtist.id;
+    const isSelected = selectedId === fromArtist.id || selectedId === toArtist.id;
 
-    // Determine connection type from connectionTypes map (fallback: 'scene')
     const connType = fromArtist.connectionTypes?.[toId]
       ?? toArtist.connectionTypes?.[fromArtist.id]
       ?? 'scene';
 
-    // Determine strength (1=weak, 2=medium, 3=strong); bidirectional lookup
     const rawStrength =
       fromArtist.connectionStrength?.[toId]
       ?? toArtist.connectionStrength?.[fromArtist.id]
       ?? 1;
     const strength: 1 | 2 | 3 = rawStrength >= 0.66 ? 3 : rawStrength >= 0.33 ? 2 : 1;
 
-    // Strength multiplier for line width and alpha
     const strengthWidthMul = strength === 3 ? 2.0 : strength === 2 ? 1.35 : 1.0;
     const strengthAlphaMul = strength === 3 ? 1.4 : strength === 2 ? 1.15 : 1.0;
 
-    // Visual properties per type — base values scaled by strength
     const typeConfig = {
       collab:   { r: 82,  g: 190, b: 255, baseAlpha: 0.45, selAlpha: 0.95, width: 2.0, selWidth: 3.8, dash: [] as number[],    offset: 0 },
       influence:{ r: 60,  g: 140, b: 210, baseAlpha: 0.22, selAlpha: 0.82, width: 1.1, selWidth: 2.2, dash: [7, 5],             offset: -glowT * 10 },
@@ -120,7 +168,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     ctx.shadowColor  = isSelected ? `rgba(${cfg.r}, ${cfg.g}, ${cfg.b}, 0.55)` : 'transparent';
     ctx.shadowBlur   = isSelected ? (connType === 'collab' ? 14 : 7) : 0;
 
-    // Strength=3 collab gets a subtle double-stroke glow pass
     if (strength === 3 && connType === 'collab' && !isSelected) {
       ctx.save();
       ctx.strokeStyle = `rgba(${cfg.r}, ${cfg.g}, ${cfg.b}, ${alpha * 0.25})`;
@@ -142,11 +189,10 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     ctx.quadraticCurveTo(mx, my, x2, y2);
     ctx.stroke();
 
-    // Strength marker: small diamond at midpoint for strong (3) connections
-    if (strength >= 2 && mapState.scale > 0.55) {
+    if (strength >= 2 && scale > 0.55) {
       const midX = 0.25 * x1 + 0.5 * mx + 0.25 * x2;
       const midY = 0.25 * y1 + 0.5 * my + 0.25 * y2;
-      const ds = strength === 3 ? 4 * mapState.scale : 2.5 * mapState.scale;
+      const ds = strength === 3 ? 4 * scale : 2.5 * scale;
       ctx.save();
       ctx.setLineDash([]);
       ctx.fillStyle = `rgba(${cfg.r}, ${cfg.g}, ${cfg.b}, ${alpha * 1.2})`;
@@ -161,16 +207,17 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     }
 
     ctx.restore();
-  }, [worldToScreen, isArtistVisible, selectedArtistId, mapState.scale]);
+  }, []); // stable — reads from refs
 
   const drawEraNode = useCallback((ctx: CanvasRenderingContext2D, era: typeof ERA_NODES[keyof typeof ERA_NODES], glowT: number) => {
-    const { sx, sy } = worldToScreen(era.x, era.y);
-    const isActive = activeEra === era.id;
-    const r = 60 * mapState.scale;
+    const { scale, offsetX, offsetY } = mapStateRef.current;
+    const sx = era.x * scale + offsetX;
+    const sy = era.y * scale + offsetY;
+    const isActive = activeEraRef.current === era.id;
+    const r = 60 * scale;
     if (r < 8) return;
 
     ctx.save();
-    // Outer ring
     const pulse = 1 + Math.sin(glowT * 0.8) * 0.05;
     ctx.strokeStyle = isActive ? 'rgba(42, 111, 173, 0.8)' : 'rgba(26, 58, 92, 0.5)';
     ctx.lineWidth = isActive ? 2 : 1;
@@ -181,7 +228,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     ctx.arc(sx, sy, r * pulse, 0, Math.PI * 2);
     ctx.stroke();
 
-    // Fill
     const grd = ctx.createRadialGradient(sx, sy, 0, sx, sy, r * 0.8);
     grd.addColorStop(0, isActive ? 'rgba(42, 111, 173, 0.15)' : 'rgba(26, 58, 92, 0.08)');
     grd.addColorStop(1, 'rgba(6, 11, 18, 0)');
@@ -190,34 +236,49 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     ctx.arc(sx, sy, r, 0, Math.PI * 2);
     ctx.fill();
 
-    // Label
-    if (mapState.scale > 0.4) {
+    if (scale > 0.4) {
       ctx.shadowBlur = 0;
       ctx.setLineDash([]);
       ctx.fillStyle = isActive ? 'rgba(200, 216, 232, 0.9)' : 'rgba(184, 200, 212, 0.5)';
-      ctx.font = `bold ${Math.max(8, 11 * mapState.scale)}px 'Space Mono', monospace`;
+      ctx.font = `bold ${Math.max(8, 11 * scale)}px 'Space Mono', monospace`;
       ctx.textAlign = 'center';
-      ctx.fillText(era.label, sx, sy - 6 * mapState.scale);
+      ctx.fillText(era.label, sx, sy - 6 * scale);
       ctx.fillStyle = isActive ? 'rgba(42, 111, 173, 0.9)' : 'rgba(184, 200, 212, 0.35)';
-      ctx.font = `${Math.max(6, 8 * mapState.scale)}px 'Space Mono', monospace`;
-      ctx.fillText(era.years, sx, sy + 10 * mapState.scale);
+      ctx.font = `${Math.max(6, 8 * scale)}px 'Space Mono', monospace`;
+      ctx.fillText(era.years, sx, sy + 10 * scale);
     }
     ctx.restore();
-  }, [worldToScreen, activeEra, mapState.scale]);
+  }, []); // stable — reads from refs
 
   const drawArtistNode = useCallback((ctx: CanvasRenderingContext2D, artist: Artist, glowT: number) => {
-    const { sx, sy } = worldToScreen(artist.x, artist.y);
-    const visible = isArtistVisible(artist);
-    const isSelected = selectedArtistId === artist.id;
-    const isHovered = hoveredNode?.artistId === artist.id;
-    const nodeR = 22 * mapState.scale;
+    const { scale, offsetX, offsetY } = mapStateRef.current;
+    const lp = LAYOUT_POS.get(artist.id) ?? { x: artist.x, y: artist.y };
+    const sx = lp.x * scale + offsetX;
+    const sy = lp.y * scale + offsetY;
+    const selectedId = selectedArtistIdRef.current;
+    const hovered = hoveredNodeRef.current;
+    const era = activeEraRef.current;
+    const yr = yearRangeRef.current;
+    const moods = activeMoodsRef.current;
+
+    const isVisible = (() => {
+      if (era && artist.era !== era) return false;
+      const y = artist.albums?.[0]?.year ?? 1990;
+      if (y < yr[0] || y > yr[1]) return false;
+      if (moods.length > 0 && !(artist.mood ?? []).some(m => moods.includes(m))) return false;
+      return true;
+    })();
+
+    const isSelected = selectedId === artist.id;
+    const isHovered = hovered?.artistId === artist.id;
+    const nodeR = 22 * scale;
 
     if (nodeR < 3) return;
 
-    nodePositionsRef.current.set(artist.id, { wx: artist.x, wy: artist.y });
+    nodePositionsRef.current.set(artist.id, { wx: lp.x, wy: lp.y });
 
     ctx.save();
-    const alpha = visible ? 1 : 0.15;
+    const alpha = isVisible ? 1 : 0.15;
 
     if (isSelected || isHovered) {
       const glowR = nodeR * (1.3 + Math.sin(glowT * 2) * 0.08);
@@ -230,24 +291,20 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
       ctx.fill();
     }
 
-    // Check for cached image
     const cachedImg = artist.imageUrl ? imageCache.get(artist.imageUrl) : undefined;
 
     if (cachedImg) {
-      // Draw monochromatic image clipped to circle
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.beginPath();
       ctx.arc(sx, sy, nodeR, 0, Math.PI * 2);
       ctx.clip();
-      // Apply the monochromatic blue filter: sepia→hue-rotate→saturate→brightness
       ctx.filter = 'sepia(1) hue-rotate(190deg) saturate(2) brightness(0.65)';
       const d = nodeR * 2;
       ctx.drawImage(cachedImg, sx - nodeR, sy - nodeR, d, d);
       ctx.filter = 'none';
       ctx.restore();
 
-      // Ring border on top
       ctx.save();
       ctx.globalAlpha = alpha;
       ctx.strokeStyle = isSelected
@@ -263,7 +320,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
       ctx.stroke();
       ctx.restore();
     } else {
-      // Fallback: gradient fill with inner dot
       const nodeFill = ctx.createRadialGradient(sx - nodeR * 0.3, sy - nodeR * 0.3, 0, sx, sy, nodeR);
       nodeFill.addColorStop(0, `rgba(42, 111, 173, ${0.8 * alpha})`);
       nodeFill.addColorStop(0.5, `rgba(26, 58, 92, ${0.9 * alpha})`);
@@ -282,7 +338,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
       ctx.fill();
       ctx.stroke();
 
-      // Inner dot
       ctx.shadowBlur = 0;
       ctx.fillStyle = `rgba(200, 216, 232, ${0.7 * alpha})`;
       ctx.beginPath();
@@ -290,11 +345,10 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
       ctx.fill();
     }
 
-    // Label
-    if (mapState.scale > 0.55 && visible) {
+    if (scale > 0.55 && isVisible) {
       ctx.shadowBlur = 0;
       ctx.fillStyle = isSelected ? 'rgba(232, 240, 248, 0.95)' : 'rgba(184, 200, 212, 0.75)';
-      const fontSize = Math.max(7, 9 * mapState.scale);
+      const fontSize = Math.max(7, 9 * scale);
       ctx.font = `${isSelected ? 'bold ' : ''}${fontSize}px 'Space Mono', monospace`;
       ctx.textAlign = 'center';
       const label = artist.name.length > 14 ? artist.name.slice(0, 12) + '…' : artist.name;
@@ -302,9 +356,11 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     }
 
     ctx.restore();
-  }, [worldToScreen, isArtistVisible, selectedArtistId, hoveredNode, mapState.scale]);
+  }, []); // stable — reads from refs
 
-  // Main draw loop
+  // ─── Main draw loop ─────────────────────────────────────────────────────────
+  // Empty deps: starts ONCE, never cancelled/restarted on state changes.
+  // State is always current because draw callbacks read from refs.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -324,7 +380,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
       const gt = glowTimeRef.current;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw influence lines first (under nodes)
       const drawn = new Set<string>();
       ARTISTS.forEach(artist => {
         artist.connections.forEach(toId => {
@@ -336,10 +391,7 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
         });
       });
 
-      // Era nodes
       Object.values(ERA_NODES).forEach(era => drawEraNode(ctx, era, gt));
-
-      // Artist nodes
       ARTISTS.forEach(artist => drawArtistNode(ctx, artist, gt));
 
       rafRef.current = requestAnimationFrame(draw);
@@ -350,7 +402,12 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
       cancelAnimationFrame(rafRef.current);
       ro.disconnect();
     };
-  }, [drawInfluenceLine, drawEraNode, drawArtistNode, mapState]);
+  }, []); // intentionally empty — draw callbacks read refs, never stale
+
+  const setCursor = useCallback((cursor: string) => {
+    document.body.style.cursor = cursor;
+    cursorRef.current = cursor;
+  }, []);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const canvas = canvasRef.current;
@@ -361,20 +418,33 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
 
     let found: NodeHover | null = null;
     for (const artist of ARTISTS) {
-      const { sx, sy } = worldToScreen(artist.x, artist.y);
+      const lp = LAYOUT_POS.get(artist.id) ?? { x: artist.x, y: artist.y };
+      const { sx, sy } = worldToScreen(lp.x, lp.y);
       const r = 22 * mapState.scale;
       if (Math.hypot(mx - sx, my - sy) <= r + 4) {
         found = { artistId: artist.id, x: e.clientX, y: e.clientY };
         break;
       }
     }
-    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+
+    // Cursor: immediate on node enter, debounced (60ms) on node leave
     if (found) {
-      hoverTimerRef.current = setTimeout(() => setHoveredNode(found), 80);
-    } else {
-      setHoveredNode(null);
+      if (cursorTimerRef.current) { clearTimeout(cursorTimerRef.current); cursorTimerRef.current = null; }
+      if (cursorRef.current !== 'grabbing' && cursorRef.current !== 'pointer') {
+        setCursor('pointer');
+      }
+    } else if (cursorRef.current === 'pointer') {
+      if (cursorTimerRef.current) clearTimeout(cursorTimerRef.current);
+      cursorTimerRef.current = setTimeout(() => {
+        setCursor('grab');
+        cursorTimerRef.current = null;
+      }, 60);
     }
-  }, [worldToScreen, mapState.scale]);
+
+    // Tooltip: debounce both show and hide (80ms)
+    if (hoverTimerRef.current) clearTimeout(hoverTimerRef.current);
+    hoverTimerRef.current = setTimeout(() => setHoveredNode(found), 80);
+  }, [worldToScreen, mapState.scale, setCursor]);
 
   const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const canvas = canvasRef.current;
@@ -383,56 +453,153 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
+    const hits: Artist[] = [];
+    const era = activeEraRef.current;
+    const yr = yearRangeRef.current;
+    const moods = activeMoodsRef.current;
+
     for (const artist of ARTISTS) {
-      const { sx, sy } = worldToScreen(artist.x, artist.y);
+      const lp = LAYOUT_POS.get(artist.id) ?? { x: artist.x, y: artist.y };
+      const { sx, sy } = worldToScreen(lp.x, lp.y);
       const r = 22 * mapState.scale + 8;
       if (Math.hypot(mx - sx, my - sy) <= r) {
-        onSelectArtist(artist);
-        return;
+        // Only include artists visible under current filters
+        const isVisible = (() => {
+          if (era && artist.era !== era) return false;
+          const y = artist.albums?.[0]?.year ?? 1990;
+          if (y < yr[0] || y > yr[1]) return false;
+          if (moods.length > 0 && !(artist.mood ?? []).some(m => moods.includes(m))) return false;
+          return true;
+        })();
+        if (isVisible) hits.push(artist);
       }
     }
-  }, [worldToScreen, mapState.scale, onSelectArtist]);
+
+    if (hits.length === 1) {
+      onSelectArtist(hits[0]);
+    } else if (hits.length > 1) {
+      // Auto-zoom into the click area so nodes separate — user can then click precisely
+      const { scale } = mapStateRef.current;
+      const newScale = Math.min(scale * 2.2, 4);
+      const wx = (mx - mapStateRef.current.offsetX) / scale;
+      const wy = (my - mapStateRef.current.offsetY) / scale;
+      setTransform({
+        scale: newScale,
+        offsetX: canvas.offsetWidth / 2 - wx * newScale,
+        offsetY: canvas.offsetHeight / 2 - wy * newScale,
+      });
+    }
+  }, [worldToScreen, mapState.scale, onSelectArtist, setTransform]);
 
   const hoveredArtist = hoveredNode ? ARTISTS.find(a => a.id === hoveredNode.artistId) : null;
 
-  const handleZoomIn = () => {
-    setMapState(prev => ({ ...prev, scale: Math.min(2.5, prev.scale * 1.2) }));
-  };
-  const handleZoomOut = () => {
-    setMapState(prev => ({ ...prev, scale: Math.max(0.25, prev.scale * 0.85) }));
-  };
-  const handleReset = () => {
-    setMapState({ offsetX: -300, offsetY: -100, scale: 0.85 });
-  };
+  const handleZoomIn = () => setTransform({ scale: mapState.scale * 1.2 });
+  const handleZoomOut = () => setTransform({ scale: mapState.scale * 0.85 });
+  const handleReset = () => setTransform({ offsetX: -300, offsetY: -100, scale: 0.85 });
 
   useEffect(() => {
     if (selectedArtistId) {
       const artist = ARTISTS.find(a => a.id === selectedArtistId);
-      if (artist) centerOn(artist.x, artist.y, 1.1);
+      if (artist) {
+        const lp = LAYOUT_POS.get(artist.id) ?? { x: artist.x, y: artist.y };
+        centerOn(lp.x, lp.y, 1.1);
+      }
     }
   }, [selectedArtistId, centerOn]);
+
+  // ── Touch tap for mobile node selection ────────────────────────────────
+  const touchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const handleTouchStartCanvas = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.touches.length === 1) {
+      touchStartRef.current = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: Date.now() };
+    }
+  }, []);
+
+  const handleTouchEndCanvas = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const ts = touchStartRef.current;
+    if (!ts || e.changedTouches.length !== 1) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - ts.x;
+    const dy = t.clientY - ts.y;
+    const elapsed = Date.now() - ts.time;
+    // Treat as tap: moved < 10px, quicker than 300ms
+    if (Math.hypot(dx, dy) < 10 && elapsed < 300) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const mx = t.clientX - rect.left;
+      const my = t.clientY - rect.top;
+      const era = activeEraRef.current;
+      const yr = yearRangeRef.current;
+      const moods = activeMoodsRef.current;
+      const hits: Artist[] = [];
+      for (const artist of ARTISTS) {
+        const lp = LAYOUT_POS.get(artist.id) ?? { x: artist.x, y: artist.y };
+        const { sx, sy } = worldToScreen(lp.x, lp.y);
+        const r = 22 * mapState.scale + 10;
+        if (Math.hypot(mx - sx, my - sy) <= r) {
+          const isVisible = (() => {
+            if (era && artist.era !== era) return false;
+            const y = artist.albums?.[0]?.year ?? 1990;
+            if (y < yr[0] || y > yr[1]) return false;
+            if (moods.length > 0 && !(artist.mood ?? []).some(m => moods.includes(m))) return false;
+            return true;
+          })();
+          if (isVisible) hits.push(artist);
+        }
+      }
+      if (hits.length === 1) {
+        onSelectArtist(hits[0]);
+      } else if (hits.length > 1) {
+        const { scale } = mapStateRef.current;
+        const newScale = Math.min(scale * 2.2, 4);
+        const wx = (mx - mapStateRef.current.offsetX) / scale;
+        const wy = (my - mapStateRef.current.offsetY) / scale;
+        setTransform({
+          scale: newScale,
+          offsetX: canvas.offsetWidth / 2 - wx * newScale,
+          offsetY: canvas.offsetHeight / 2 - wy * newScale,
+        });
+      }
+    }
+    touchStartRef.current = null;
+  }, [worldToScreen, mapState.scale, onSelectArtist, setTransform]);
 
   return (
     <div className="relative w-full h-full overflow-hidden">
       <div
+        ref={wrapperRef}
         className="absolute inset-0"
         onMouseMove={handleMouseMove}
         onClick={handleClick}
-        style={{ cursor: hoveredNode ? 'pointer' : 'grab' }}
+        onTouchStart={handleTouchStartCanvas}
+        onTouchEnd={handleTouchEndCanvas}
+        onMouseDown={() => {
+          if (cursorTimerRef.current) { clearTimeout(cursorTimerRef.current); cursorTimerRef.current = null; }
+          setCursor('grabbing');
+        }}
+        onMouseUp={() => {
+          setCursor('grab');
+        }}
+        onMouseLeave={() => {
+          if (hoverTimerRef.current) { clearTimeout(hoverTimerRef.current); hoverTimerRef.current = null; }
+          if (cursorTimerRef.current) { clearTimeout(cursorTimerRef.current); cursorTimerRef.current = null; }
+          setCursor('grab');
+          setHoveredNode(null);
+        }}
       >
         <canvas ref={canvasRef} className="w-full h-full" />
       </div>
 
-      {/* Hover tooltip — absolute inside map container so it never overflows onto panels */}
+      {/* Hover tooltip */}
       {hoveredArtist && hoveredNode && (
         <div
           className="absolute pointer-events-none z-30 xerox-border bg-card/95 backdrop-blur-sm"
           style={{
-            // Offset right of the node; flip left if near right edge of canvas
             left: hoveredNode.x + 16,
             top: Math.max(hoveredNode.y - 60, 8),
             maxWidth: 200,
-            // Nudge left if it would overflow the container width
             transform: hoveredNode.x > window.innerWidth * 0.65 ? 'translateX(calc(-100% - 32px))' : undefined,
           }}
         >
@@ -448,6 +615,8 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
           </div>
         </div>
       )}
+
+      {/* Overlap disambiguation — replaced by auto-zoom on multi-hit click */}
 
       {/* Map controls */}
       <div className="absolute bottom-6 right-6 flex flex-col gap-1 z-20">
@@ -467,7 +636,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
         <div className="xerox-border bg-card/80 backdrop-blur-sm p-2.5 space-y-2" style={{ minWidth: 160 }}>
           <div className="archival-label text-muted-foreground/60" style={{ fontSize: '0.5rem' }}>CONNECTION TYPE</div>
 
-          {/* Collab */}
           <div className="flex items-center gap-2">
             <svg width="36" height="8" viewBox="0 0 36 8" fill="none">
               <line x1="0" y1="4" x2="36" y2="4" stroke="rgba(82,190,255,0.85)" strokeWidth="3" />
@@ -475,7 +643,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
             <span className="font-mono text-blue-300/80" style={{ fontSize: '0.5rem' }}>COLLAB</span>
           </div>
 
-          {/* Influence */}
           <div className="flex items-center gap-2">
             <svg width="36" height="8" viewBox="0 0 36 8" fill="none">
               <line x1="0" y1="4" x2="36" y2="4" stroke="rgba(60,140,210,0.7)" strokeWidth="1.5" strokeDasharray="6 4" />
@@ -483,7 +650,6 @@ export default function GenreMapCanvas({ activeMoods, activeEra, yearRange, onSe
             <span className="font-mono text-blue-400/70" style={{ fontSize: '0.5rem' }}>INFLUENCE</span>
           </div>
 
-          {/* Scene */}
           <div className="flex items-center gap-2">
             <svg width="36" height="8" viewBox="0 0 36 8" fill="none">
               <line x1="0" y1="4" x2="36" y2="4" stroke="rgba(28,68,130,0.6)" strokeWidth="1" strokeDasharray="2 6" />

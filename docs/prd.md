@@ -1,565 +1,292 @@
-# Dokumen Persyaratan
+# Dokumen Kebutuhan
 
-## 1. Ikhtisar Aplikasi
+## 1. Ringkasan Aplikasi
 
-**Nama Aplikasi**: Trip-Hop Archive Map
+**Nama Aplikasi**: TripHop-Map
 
-**Deskripsi**: Peta musik interaktif berbasis web dan timeline yang mendokumentasikan evolusi genre Trip-Hop dari akhir 1980-an hingga saat ini. Aplikasi ini berfungsi sebagai arsip hidup dan museum sonik dengan estetika underground tahun 90-an, menampilkan node artis yang dapat dijelajahi, konteks historis, integrasi multimedia, dan manajemen playlist dengan kemampuan ekspor ke Spotify.
+**Deskripsi**: Aplikasi web interaktif untuk menjelajahi musik trip-hop melalui berbagai antarmuka visualisasi dan penemuan. Aplikasi ini menyediakan pengalaman eksplorasi musik bergaya arsip dengan pemetaan genre interaktif, profil artis, pemutaran lagu, filter suasana hati, navigasi timeline, visualisasi geografis, analisis audio, kurasi lagu langka, pembuat playlist, dan panel informasi kontekstual.
 
-## 2. Pengguna dan Kasus Penggunaan
+## 2. Pengguna dan Skenario Penggunaan
 
 **Pengguna Target**:
-- Sejarawan musik dan peneliti
-- Penggemar dan kolektor trip-hop
-- Penjelajah budaya musik underground
-- Mahasiswa musik yang mempelajari evolusi genre
+- Penggemar musik trip-hop yang ingin menemukan artis dan lagu
+- Peneliti musik yang mengeksplorasi koneksi genre dan hubungan artis
+- Pendengar kasual yang mencari lagu langka yang dikurasi
+- Pengguna yang ingin membuat dan membagikan playlist kustom
 
-**Kasus Penggunaan Inti**:
-- Menjelajahi asal-usul dan evolusi genre Trip-Hop
-- Menemukan koneksi dan pengaruh antar artis
-- Meneliti konteks historis album dan track
-- Menemukan artis serupa dan rilis tersembunyi
-- Membuat dan mengelola playlist pribadi
-- Mengekspor playlist ke Spotify
-- Mengakses playlist tematik yang dikurasi
-- Membagikan playlist pribadi dengan orang lain
-- Menelusuri dan menemukan lagu di semua artis
-- Memfilter dan mencari lagu berdasarkan mood, era, judul, atau artis
+**Skenario Penggunaan Inti**:
+- Menjelajahi 280+ artis trip-hop melalui peta berbasis node interaktif
+- Menemukan lagu berdasarkan suasana hati, era, atau lokasi geografis
+- Mendengarkan lagu melalui pemutaran YouTube terintegrasi
+- Membuat dan membagikan playlist kustom
+- Meneliti koneksi artis dan karakteristik musik
 
 ## 3. Struktur Halaman dan Deskripsi Fungsional
 
+### 3.1 Struktur Halaman
+
 ```
-Trip-Hop Archive Map
-├── Main Map Canvas
-│   ├── Origins Node (1980s-1992)
-│   ├── Golden Age Node (1993-1999)
-│   ├── Expansion Node (2000-2010)
-│   └── Modern Hybrid Node (2010-present)
-├── Artist Archive Panel
-├── Song Details Panel
-├── Playlist Panel
-├── Songs Discovery Panel
-├── Timeline Slider
-├── Filter Controls
-└── Geographic Map View
+Aplikasi TripHop-Map
+├── Layar Splash Intro
+├── Halaman Autentikasi
+│   ├── Halaman Login
+│   └── Halaman Signup
+└── Antarmuka Aplikasi Utama
+    ├── Canvas Peta Genre Interaktif
+    ├── Panel Artis
+    ├── Panel Lagu
+    ├── Sidebar Filter Suasana Hati
+    ├── Timeline Scrubber
+    ├── Panel Peta Geografis
+    ├── Panel Sound DNA
+    ├── Panel Deep Cuts
+    ├── Pembuat Playlist
+    ├── Panel Penemuan Lagu
+    ├── Panel Wiki
+    ├── Fitur Pencarian Artis
+    └── Halaman Daftar Artis
 ```
 
-### 3.1 Main Map Canvas
+### 3.2 Layar Splash Intro
 
-**Presentasi Visual**:
-- Canvas yang dapat di-zoom tanpa batas dengan peta genre yang dapat dijelajahi
-- Empat node era utama yang mewakili periode evolusi Trip-Hop
-- Node artis ditampilkan sebagai elemen mengambang dengan thumbnail cover album atau foto artis yang diproses
-- Gambar artis ditampilkan sebagai thumbnail melingkar dalam node, menerapkan CSS filter: sepia(1) hue-rotate(190deg) saturate(2) brightness(0.65) untuk efek monokrom biru tua
-- Gambar diambil dari URL nyata
-- Cover album dirender sebagai versi terindeks monokrom biru
-- Garis pengaruh menghubungkan artis terkait dengan encoding visual:
-  + Ketebalan garis: tebal (kolaborasi langsung), sedang (pengaruh kuat), tipis (koneksi scene/era)
-  + Warna/opacity garis: membedakan kolaborasi vs. pengaruh vs. koneksi label bersama
-  + Tooltip hover menampilkan deskripsi hubungan
-- Background animasi atmosferik dengan asap, tinta-dalam-air, distorsi cairan biru, efek simulasi feedback loop
-
-**Interaksi**:
-- Pergerakan kamera dengan fisika inersia halus
-- Fungsi zoom in/out
-- Simulasi fisika drift node
-- Hover di atas node artis menampilkan overlay metadata
-- Klik node artis membuka Artist Archive Panel
-- Klik lagu dalam artis membuka Song Details Panel
-- Hover di atas garis koneksi menampilkan tooltip dengan deskripsi hubungan
-
-**Konten Node Era**:
-
-*Origins Node (1980s-1992)*:
-- Menampilkan akar dalam dub, hip-hop, post-punk, jazz, ambient
-- Konteks scene underground Bristol
-- Penjelasan kondisi sosial dan musikal
-- Node artis: Neneh Cherry, Soul II Soul, The Pop Group/Mark Stewart, Sade, DJ Shadow (early), Nightmares on Wax, Goldie (early), Björk (debut era), On-U Sound/Adrian Sherwood, Keith LeBlanc, LTJ Bukem, The Orb, DJ Spooky, Massive Attack precursor (Wild Bunch), Earthling, Cocteau Twins/Elizabeth Fraser
-
-*Golden Age Node (1993-1999)*:
-- Node artis: Massive Attack, Portishead, Tricky, Sneaker Pimps, Morcheeba, UNKLE, DJ Krush, DJ Shadow, Kruder & Dorfmeister, Thievery Corporation, Nightmares on Wax, Moloko, Martina Topley-Bird, Archive, Howie B, Waldeck, Faithless, Björk (Homogenic era), Cocteau Twins/Elizabeth Fraser, Mono (UK), Bowery Electric, Euphoria, Gravediggaz, Guru (Jazzmatazz), Prefuse 73, Tricky (Nearly God alias), Earthling, Antipop Consortium, Portishead (Portishead album 1997)
-
-*Expansion Node (2000-2010)*:
-- Node artis: Zero 7, Bonobo, Lamb, Hooverphonic, Röyksopp, Goldfrapp, Beth Orton, Emiliana Torrini, Trentemøller, Telepopmusik, Bitter:Sweet, Thievery Corporation, Air, Yppah, Unkle (War Stories era), Psapp, Charlotte Gainsbourg, Lhasa de Sela, Múm, Prefuse 73, Four Tet, Flying Lotus (early), Erykah Badu (neo-soul/trip-hop crossover), Amy Winehouse (adjacent production style), Portishead (Third 2008), Jose Gonzalez, Lemon Jelly, Cibelle, Andreya Triana, BadBadNotGood, Hiatus Kaiyote, Esthero, El Guincho, Khruangbin
-
-*Modern Hybrid Node (2010-present)*:
-- Node artis: FKA Twigs, King Krule, Mount Kimbie, Nicolas Jaar/Darkside, Forest Swords, Floating Points, Moderat, Sevdaliza, Cigarettes After Sex, Chelsea Wolfe, How to Dress Well, Grouper, Actress, Kelsey Lu, Darkstar, Daughter, Zola Jesus, Warpaint, Chromatics, Lebanon Hanover, Andy Stott, Demdike Stare, Raime, Laurel Halo, Kelela, Sampha, Loyle Carner, billy woods, Bon Iver (adjacent), Beach House (adjacent), Burial (additional detail), James Blake (more albums), Flying Lotus (full career), Arca, serpentwithfeet, Tirzah, Jlin, Shackleton, Pinch, Ibeyi, Blue Daisy, Shabazz Palaces, Kode9, Meitei, Foodman, Ovall, Nicola Cruz, C.Tangana, Ceu, Dengue Dengue Dengue, Fatoumata Diawara, Moonchild Sanelly, BLK JKS, Awesome Tapes From Africa collective, Thandiswa Mazwai, Petite Noir, Mdou Moctar, Baloji, Nils Frahm, Apparat, Brandt Brauer Frick, James Holden, dan artis yang memadukan trip-hop dengan electronic, lo-fi, ambient, experimental bass, darkwave
-
-**Posisi Artis**:
-- Artis era Origins diposisikan di sisi kiri canvas, koordinat x 0-25% dari lebar canvas
-- Artis Golden Age diposisikan tengah-kiri, koordinat x 25-50% dari lebar canvas
-- Artis era Expansion diposisikan tengah-kanan, koordinat x 50-75% dari lebar canvas
-- Artis Modern Hybrid diposisikan di sisi kanan, koordinat x 75-100% dari lebar canvas
-- Artis dalam setiap era tersebar vertikal untuk menghindari tumpang tindih
-- Setiap node artis memiliki koordinat x/y yang ditentukan pada canvas tak terbatas
-- Jarak minimum antar node memastikan keterbacaan
-
-### 3.2 Artist Archive Panel
-
-**Pemicu**: Klik node artis pada Main Map Canvas
-
-**Tampilan Konten**:
-- Biografi lengkap artis
-- Signifikansi historis dalam genre Trip-Hop
-- Cerita pembentukan
-- Pengaruh pada evolusi trip-hop
-- Timeline album dengan tanggal rilis
-- Kolaborasi kunci
-- Asal geografis
-- Daftar artis terkait (link yang dapat diklik)
-- Daftar lagu dengan fungsi pemutaran
-- Tombol Add to Playlist untuk setiap lagu
-
-**Integrasi Media**:
-- Embedded media player dengan urutan prioritas: YouTube → SoundCloud → Bandcamp → Archive.org → platform streaming underground
-- Auto-fetch dinamis embed berdasarkan ketersediaan
-
-**Interaksi**:
-- Tutup panel kembali ke Main Map Canvas
-- Klik artis terkait navigasi ke panel artis tersebut
-- Klik lagu membuka Song Details Panel
-- Klik Add to Playlist menambahkan lagu ke playlist pribadi pengguna
-
-### 3.3 Song Details Panel
-
-**Pemicu**: Klik lagu dari Artist Archive Panel atau map
-
-**Tampilan Konten**:
-- Cerita di balik track
-- Konteks produksi
-- Konteks album
-- Dampak budaya
-- Analisis lirik
-- Sumber sample
-- Klasifikasi mood
-- BPM
-- Key
-- Tombol Add to Playlist
-
-**Integrasi Media**:
-- Embedded player dengan urutan prioritas yang sama seperti Artist Panel
-
-**Interaksi**:
-- Tutup panel kembali ke tampilan sebelumnya
-- Navigasi ke artis atau album induk
-- Klik Add to Playlist menambahkan lagu ke playlist pribadi pengguna
-
-### 3.4 Playlist Panel
-
-**Pemicu**: Klik ikon atau tombol playlist dari interface utama
-
-**Tampilan Konten**:
-- Bagian playlist pribadi pengguna menampilkan item antrian
-- Bagian playlist terkurasi yang telah dibuat sebelumnya
-- Setiap item playlist menampilkan: judul lagu, nama artis, link YouTube
-
-**Playlist Pribadi Pengguna**:
-- Menampilkan semua lagu yang ditambahkan oleh pengguna
-- Setiap item menampilkan judul lagu, nama artis, dan link YouTube
-- Tombol Remove untuk setiap item
-- Tombol Clear All
-- Opsi ekspor: Export as YouTube Playlist Link, Copy as Text, Export to Spotify
-- Tombol Share Playlist: menyalin URL lengkap dengan data playlist ke clipboard
-
-**Export to Spotify**:
-- Tombol memicu alur autentikasi Spotify OAuth PKCE
-- Mengarahkan pengguna ke halaman otorisasi Spotify
-- Setelah otorisasi, kembali ke aplikasi
-- Membuat playlist Spotify baru melalui Spotify Web API
-- Mencari setiap track berdasarkan judul + artis dan menambahkan ke playlist
-- Menampilkan pesan sukses dengan link ke playlist Spotify yang dibuat
-
-**Playlist Terkurasi yang Telah Dibuat**:
-- ESSENTIAL BRISTOL: rekaman dasar Bristol
-- LATE NIGHT MELANCHOLY: track lambat, gelap, emosional
-- CINEMATIC TRIP-HOP: pilihan yang dipengaruhi film score
-- DEEP UNDERGROUND: pilihan langka dan tidak jelas
-- MODERN DESCENDANTS: artis kontemporer yang membawa tradisi
-- Setiap playlist terkurasi menampilkan daftar lagu dengan link YouTube
-- Tombol Play untuk memulai playlist terkurasi
-- Opsi untuk menambahkan seluruh playlist ke playlist pribadi
-
-**Interaksi**:
-- Klik lagu dalam playlist membuka Song Details Panel
-- Klik Export as YouTube Playlist Link menghasilkan URL yang dapat dibagikan
-- Klik Copy as Text menyalin teks playlist yang diformat
-- Klik Export to Spotify memulai alur OAuth dan pembuatan playlist
-- Klik Remove menghapus item dari playlist pribadi
-- Klik Clear All mengosongkan playlist pribadi
-- Klik Share Playlist menyalin URL lengkap ke clipboard
-- Tutup panel kembali ke tampilan sebelumnya
-
-### 3.5 Songs Discovery Panel
-
-**Pemicu**: Klik tab atau tombol Songs dari interface utama
-
-**Tampilan Konten**:
-- Daftar yang dapat ditelusuri dari semua lagu di semua artis
-- Setiap item lagu menampilkan: judul lagu, nama artis, tag mood, era
-- Tombol Add to Playlist untuk setiap lagu
-- Tombol Play untuk setiap lagu
-
-**Filter dan Pencarian**:
-- Filter berdasarkan mood: dark, melancholic, jazzy, smoky, urban, cinematic
-- Filter berdasarkan era: Origins, Golden Age, Expansion, Modern Hybrid
-- Pencarian berdasarkan judul lagu atau nama artis
-- Beberapa filter dapat diterapkan secara bersamaan
-
-**Interaksi**:
-- Klik lagu membuka Song Details Panel
-- Klik Add to Playlist menambahkan lagu ke playlist pribadi pengguna
-- Klik Play memulai pemutaran melalui embedded player
-- Terapkan filter memperbarui daftar lagu yang ditampilkan
-- Masukkan query pencarian memfilter daftar lagu secara real-time
-- Tutup panel kembali ke tampilan sebelumnya
-
-### 3.6 Timeline Slider
+**Tujuan**: Layar sambutan yang ditampilkan pada kunjungan pertama
 
 **Fungsionalitas**:
-- Timeline horizontal yang mencakup 1980-an hingga saat ini
-- Sliding timeline memfilter artis yang terlihat berdasarkan era
-- Menyoroti era aktif pada Main Map Canvas
-- Menampilkan indikator rentang tahun
+- Menampilkan branding dan pengenalan aplikasi
+- Menyediakan titik masuk ke aplikasi utama
+- Tutup untuk melanjutkan ke autentikasi atau antarmuka utama
 
-### 3.7 Filter Controls
+### 3.3 Halaman Autentikasi
 
-**Filter Mood**:
-- Opsi filter: dark, melancholic, jazzy, smoky, urban, cinematic
-- Memungkinkan beberapa pilihan
-- Memfilter artis dan lagu yang cocok dengan mood yang dipilih
-
-**Filter Lainnya**:
-- Filter asal geografis
-- Filter era
-- Filter tipe pengaruh
-
-### 3.8 Geographic Map View
+#### 3.3.1 Halaman Login
 
 **Fungsionalitas**:
-- Toggle antara peta genre dan peta geografis
-- Menampilkan lokasi artis pada peta dunia
-- Menyoroti Bristol sebagai titik asal
-- Menampilkan penyebaran global Trip-Hop
-- Klik lokasi menampilkan artis dari wilayah tersebut
+- Pengguna memasukkan username dan password
+- Mengirim kredensial untuk autentikasi melalui Supabase
+- Navigasi ke aplikasi utama setelah login berhasil
+- Menyediakan tautan ke halaman signup
 
-### 3.9 Fitur Khusus
+#### 3.3.2 Halaman Signup
 
-**Interactive Influence Network**:
-- Memvisualisasikan koneksi antar artis
-- Menampilkan arah dan kekuatan pengaruh
-- Filter berdasarkan tipe pengaruh
+**Fungsionalitas**:
+- Pengguna memasukkan username dan password untuk membuat akun
+- Mengirim registrasi melalui autentikasi Supabase
+- Navigasi ke aplikasi utama setelah registrasi berhasil
+- Menyediakan tautan ke halaman login
 
-**Sonic DNA Visualizer**:
-- Menampilkan garis keturunan genre dari artis yang dipilih
-- Menampilkan breakdown elemen musikal
-- Melacak akar ke genre asal
+### 3.4 Antarmuka Aplikasi Utama
 
-**Discover Similar Engine**:
-- Merekomendasikan artis berdasarkan pilihan saat ini
-- Mempertimbangkan mood, era, asal geografis, pola pengaruh
+#### 3.4.1 Canvas Peta Genre Interaktif
 
-**Hidden Deep Cuts Section**:
-- Area khusus yang menampilkan rilis trip-hop underground
-- Track langka dan artis tidak jelas yang dikurasi
-- Dapat diakses melalui eksplorasi atau navigasi khusus
+**Fungsionalitas**:
+- Menampilkan 280+ artis trip-hop sebagai node interaktif
+- Mendukung interaksi drag untuk menjelajahi area peta
+- Klik node untuk memilih artis dan menampilkan detail di Panel Artis
+- Memvisualisasikan hubungan artis dan koneksi genre
+- Menerapkan filter dari Sidebar Filter Suasana Hati dan Timeline Scrubber untuk menampilkan/menyembunyikan node
+
+#### 3.4.2 Panel Artis
+
+**Fungsionalitas**:
+- Menampilkan detail artis yang dipilih (nama, bio, gambar)
+- Menampilkan daftar album artis
+- Menampilkan daftar lagu artis
+- Klik lagu untuk menampilkan detail di Panel Lagu dan memulai pemutaran
+
+#### 3.4.3 Panel Lagu
+
+**Fungsionalitas**:
+- Menampilkan detail lagu yang dipilih (judul, artis, album, tahun rilis)
+- Menyematkan pemutar YouTube untuk pemutaran lagu
+- Menyediakan kontrol untuk play/pause/seek audio
+- Menampilkan metadata dan karakteristik lagu
+
+#### 3.4.4 Sidebar Filter Suasana Hati
+
+**Fungsionalitas**:
+- Menampilkan daftar tag suasana hati (misalnya dark, atmospheric, jazzy, downtempo)
+- Memungkinkan pengguna memilih/membatalkan pilihan tag suasana hati
+- Memfilter artis dan lagu yang ditampilkan di Canvas Peta Genre dan Panel Penemuan Lagu berdasarkan suasana hati yang dipilih
+
+#### 3.4.5 Timeline Scrubber
+
+**Fungsionalitas**:
+- Menampilkan slider timeline yang mewakili rentang tahun (misalnya 1990-2025)
+- Memungkinkan pengguna menyesuaikan tahun awal dan akhir melalui handle slider
+- Memfilter artis dan lagu berdasarkan era/rentang tahun rilis
+- Memperbarui Canvas Peta Genre dan Panel Penemuan Lagu berdasarkan timeline yang dipilih
+
+#### 3.4.6 Panel Peta Geografis
+
+**Fungsionalitas**:
+- Menampilkan peta dunia dengan lokasi artis yang ditandai
+- Menampilkan distribusi artis berdasarkan wilayah geografis
+- Klik penanda lokasi untuk memfilter artis berdasarkan wilayah
+- Memvisualisasikan penyebaran geografis genre trip-hop
+
+#### 3.4.7 Panel Sound DNA
+
+**Fungsionalitas**:
+- Menampilkan visualisasi karakteristik audio untuk lagu atau artis yang dipilih
+- Menampilkan metrik seperti tempo, energi, danceability, acousticness, instrumentalness
+- Menyajikan data dalam format visual (misalnya radar chart, bar chart)
+
+#### 3.4.8 Panel Deep Cuts
+
+**Fungsionalitas**:
+- Menampilkan daftar kurasi lagu trip-hop yang langka
+- Menampilkan judul lagu, artis, dan deskripsi singkat
+- Klik lagu untuk memutar di Panel Lagu
+- Menyediakan penemuan musik yang kurang dikenal
+
+#### 3.4.9 Pembuat Playlist
+
+**Fungsionalitas**:
+- Menampilkan playlist saat ini dengan lagu yang ditambahkan
+- Menambahkan lagu ke playlist dari Panel Lagu atau Panel Penemuan Lagu
+- Menghapus lagu dari playlist
+- Mengurutkan ulang lagu melalui drag-and-drop
+- Menghasilkan URL yang dapat dibagikan untuk playlist
+- Mengekspor playlist ke Spotify (jika pengguna menghubungkan akun Spotify)
+
+#### 3.4.10 Panel Penemuan Lagu
+
+**Fungsionalitas**:
+- Menampilkan daftar semua lagu yang dapat dijelajahi di database
+- Menerapkan filter dari Sidebar Filter Suasana Hati dan Timeline Scrubber
+- Mengurutkan lagu berdasarkan judul, artis, tahun, atau popularitas
+- Klik lagu untuk menampilkan detail di Panel Lagu dan memulai pemutaran
+- Menambahkan lagu ke Pembuat Playlist
+
+#### 3.4.11 Panel Wiki
+
+**Fungsionalitas**:
+- Menampilkan informasi kontekstual terkait artis, lagu, atau genre yang dipilih
+- Menampilkan konteks historis, evolusi genre, pengaruh artis
+- Menyediakan konten edukatif untuk eksplorasi musik
+
+#### 3.4.12 Fitur Pencarian Artis
+
+**Fungsionalitas**:
+- Menampilkan input pencarian untuk mencari artis berdasarkan nama
+- Melakukan pencarian real-time saat pengguna mengetik
+- Menampilkan hasil pencarian berupa kartu artis yang cocok
+- Menyorot bagian nama artis yang sesuai dengan kata kunci pencarian
+- Klik kartu artis untuk menampilkan detail di Panel Artis
+
+#### 3.4.13 Halaman Daftar Artis
+
+**Fungsionalitas**:
+- Menampilkan daftar semua artis trip-hop di database (151 artis)
+- Menampilkan informasi ringkas untuk setiap artis: nama, era (origin/golden/expansion/modern), asal kota/negara, jumlah lagu
+- Menyediakan opsi pengurutan: A-Z, berdasarkan era
+- Menyediakan filter berdasarkan era (origin/golden/expansion/modern)
+- Klik artis untuk menampilkan detail di Panel Artis
+
+### 3.5 Audio Ambient
+
+**Fungsionalitas**:
+- Memutar audio ambient vinyl crackle di latar belakang
+- Menyediakan toggle untuk mengaktifkan/menonaktifkan audio ambient
+- Mempertahankan volume rendah agar tidak mengganggu pemutaran lagu
+
+### 3.6 Tema Visual
+
+**Fungsionalitas**:
+- Menerapkan tema gelap di seluruh aplikasi
+- Menggunakan font monospace untuk estetika arsip
+- Mempertahankan palet warna dan tipografi yang konsisten
 
 ## 4. Aturan Bisnis dan Logika
 
-### 4.1 Aturan Pemrosesan Visual
+### 4.1 Alur Autentikasi
 
-**Skema Warna**:
-- Palet utama: biru monokrom tua yang terinspirasi dari album Dummy Portishead
-- Menerapkan efek pengindeksan warna dan posterisasi
-- Menggunakan gradien dithered
-- Menerapkan bayangan biru-hitam
-- Menambahkan overlay grain
-- Menerapkan perlakuan fotografi cahaya rendah
-- Menyertakan tekstur Xerox dan artefak offset printing
-- Menerapkan pemrosesan gambar monokrom dengan efek cahaya biru
+- Pengguna harus menyelesaikan signup atau login untuk mengakses aplikasi utama
+- Autentikasi ditangani melalui Supabase dengan username dan password
+- Sesi bertahan di seluruh sesi browser hingga pengguna logout
 
-**Pemrosesan Cover Album**:
-- Mengonversi semua cover album ke versi terindeks monokrom biru
-- Menerapkan posterisasi dan dithering
-- Mempertahankan pengenalan sambil mencapai estetika arsip
+### 4.2 Data Artis dan Lagu
 
-**Pemrosesan Gambar Artis**:
-- Mengambil gambar artis dari URL nyata (cover album atau foto artis)
-- Menerapkan CSS filter: sepia(1) hue-rotate(190deg) saturate(2) brightness(0.65)
-- Merender sebagai thumbnail melingkar yang dipotong dalam lingkaran node artis canvas
-- Gambar sesuai dengan estetika arsip monokrom biru tua
+- Node artis di Canvas Peta Genre mewakili 280+ artis trip-hop
+- Setiap artis memiliki album dan lagu terkait yang disimpan di backend
+- Data lagu mencakup judul, artis, album, tahun rilis, tag suasana hati, karakteristik audio
 
-### 4.2 Aturan Animasi
+### 4.3 Logika Filter
 
-**Pergerakan Kamera**:
-- Pergerakan inersia halus dengan momentum
-- Transisi zoom dengan efek blur-to-focus
-- Parallax ambient lambat untuk elemen background
+- Sidebar Filter Suasana Hati dan Timeline Scrubber menerapkan filter kumulatif
+- Memilih beberapa tag suasana hati menampilkan artis/lagu yang cocok dengan salah satu suasana hati yang dipilih (logika OR)
+- Rentang timeline memfilter artis/lagu dengan tahun rilis dalam rentang yang dipilih
+- Filter diterapkan ke Canvas Peta Genre, Panel Penemuan Lagu, dan Panel Peta Geografis secara bersamaan
 
-**Perilaku Node**:
-- Simulasi fisika drift halus
-- Hover memicu efek reaktif noise
-- Klik memicu animasi ekspansi
+### 4.4 Berbagi Playlist
 
-**Transisi**:
-- Transisi pixelated antar tampilan
-- Overlay glitch VHS pada perubahan state
-- Efek gerakan cairan
+- Pembuat Playlist menghasilkan URL unik yang dapat dibagikan yang mengkodekan ID lagu playlist
+- Mengakses URL yang dibagikan memuat playlist di Pembuat Playlist penerima
+- Ekspor Spotify memerlukan pengguna untuk mengautentikasi dengan akun Spotify
 
-**Animasi Background**:
-- Visual abstrak atmosferik berkelanjutan
-- Partikel reaktif audio saat musik diputar
+### 4.5 Pemutaran YouTube
 
-### 4.3 Encoding Visual Garis Koneksi
+- Panel Lagu menyematkan pemutar YouTube menggunakan ID video YouTube lagu terkait
+- Pemutaran dimulai ketika pengguna mengklik lagu di Panel Artis, Panel Penemuan Lagu, atau Panel Deep Cuts
+- Hanya satu lagu yang diputar pada satu waktu; memilih lagu baru menghentikan pemutaran saat ini
 
-**Ketebalan Garis**:
-- Tebal: kolaborasi langsung antar artis
-- Sedang: hubungan pengaruh kuat
-- Tipis: koneksi scene/era
+### 4.6 Pencarian Artis
 
-**Warna/Opacity Garis**:
-- Warna atau tingkat opacity yang berbeda membedakan:
-  + Koneksi kolaborasi
-  + Koneksi pengaruh
-  + Koneksi label bersama
+- Pencarian dilakukan secara real-time saat pengguna mengetik di input pencarian
+- Hasil pencarian mencocokkan nama artis dengan kata kunci pencarian
+- Bagian nama yang cocok disorot dalam hasil pencarian
 
-**Tooltip Hover**:
-- Menampilkan deskripsi hubungan saat hover di atas garis koneksi
-- Menyertakan tipe hubungan dan konteks
+### 4.7 Daftar Artis
 
-### 4.4 Prioritas Embed Media
+- Daftar menampilkan 151 artis trip-hop yang tersedia di database
+- Pengurutan A-Z mengurutkan artis berdasarkan nama secara alfabetis
+- Pengurutan berdasarkan era mengelompokkan artis berdasarkan era (origin/golden/expansion/modern)
+- Filter era menampilkan hanya artis dari era yang dipilih
 
-**Prioritas Sumber Embed**:
-1. Embed YouTube
-2. Embed SoundCloud
-3. Embed Bandcamp
-4. Embed Archive.org
-5. Embed platform streaming underground
-
-**Logika Fetch**:
-- Mencoba sumber dalam urutan prioritas
-- Menggunakan embed pertama yang tersedia
-- Menampilkan placeholder jika tidak ada embed yang tersedia
-
-### 4.5 Aturan Desain Suara
-
-**Audio Ambient**:
-- Crackle vinyl volume rendah diputar saat loading awal
-- Suara UI halus yang terinspirasi dari klik tape dan static radio pada interaksi
-- Fade in/out halus
-
-### 4.6 Logika Rekomendasi
-
-**Algoritma Discover Similar**:
-- Menghitung kesamaan berdasarkan: tag mood, kedekatan era, asal geografis, pengaruh bersama, karakteristik blend genre
-- Mengurutkan rekomendasi berdasarkan skor kesamaan
-- Menampilkan kecocokan teratas
-
-### 4.7 Aturan Manajemen Playlist
-
-**Add to Playlist**:
-- Pengguna mengklik tombol Add to Playlist pada lagu apa pun
-- Lagu ditambahkan ke akhir antrian playlist pribadi
-- Lagu duplikat diperbolehkan
-
-**Ekspor Playlist**:
-- Export as YouTube Playlist Link menghasilkan URL yang dapat dibagikan dengan semua link YouTube
-- Copy as Text memformat playlist sebagai: Judul Lagu - Nama Artis (Link YouTube) satu per baris
-
-**Bagikan Playlist**:
-- Encode playlist pribadi sebagai string JSON base64 terkompresi
-- Tambahkan string yang di-encode ke hash URL (#playlist=...)
-- Klik tombol Share Playlist menyalin URL lengkap ke clipboard
-- Saat loading halaman, deteksi parameter playlist di hash URL
-- Decode hash dan pre-populate playlist
-
-**Ekspor Spotify**:
-- Pengguna mengklik tombol Export to Spotify
-- Memulai alur Spotify OAuth PKCE
-- Redirect ke halaman otorisasi Spotify dengan scope yang diperlukan: playlist-modify-public, playlist-modify-private
-- Setelah pengguna mengotorisasi, Spotify redirect kembali dengan kode otorisasi
-- Tukar kode untuk access token
-- Membuat playlist Spotify baru melalui Spotify Web API
-- Untuk setiap lagu dalam playlist pribadi, cari Spotify berdasarkan judul + artis
-- Tambahkan track yang ditemukan ke playlist yang dibuat
-- Menampilkan pesan sukses dengan link ke playlist Spotify
-- Menangani error: kegagalan otorisasi, kegagalan pencarian, error API
-
-**Perilaku Playlist Terkurasi**:
-- Playlist yang telah dibuat sebelumnya bersifat read-only
-- Pengguna dapat menambahkan seluruh playlist terkurasi ke playlist pribadi
-- Pengguna dapat menambahkan lagu individual dari playlist terkurasi ke playlist pribadi
-
-### 4.8 Database Artis dan Posisi
-
-**Cakupan Artis Lengkap**:
-- Database mencakup semua artis trip-hop signifikan di semua era
-- Setiap artis memiliki metadata lengkap: biografi, album, lagu dengan YouTube ID, asal geografis, era, pengaruh, tag mood, koordinat x/y canvas, hubungan koneksi
-- Setiap artis harus memiliki setidaknya 2 lagu dengan YouTube video ID nyata
-- Lagu menekankan hidden gems dan deep cuts di samping track terkenal
-
-**Logika Posisi Canvas**:
-- Era Origins (1980-1992): koordinat x 0-25% dari lebar canvas, sisi kiri
-- Golden Age (1993-1999): koordinat x 25-50% dari lebar canvas, tengah-kiri
-- Era Expansion (2000-2010): koordinat x 50-75% dari lebar canvas, tengah-kanan
-- Modern Hybrid (2010-present): koordinat x 75-100% dari lebar canvas, sisi kanan
-- Artis dalam setiap era tersebar vertikal untuk menghindari tumpang tindih
-- Jarak minimum antar node memastikan keterbacaan
-
-**Artis Kontemporer Global (Post-2015)**:
-- Artis tambahan dari scene global ditambahkan ke node Modern Hybrid
-- Jepang: Meitei, Foodman, Ovall
-- Amerika Selatan: Nicola Cruz, C.Tangana, Ceu, Dengue Dengue Dengue
-- Afrika: Fatoumata Diawara, Moonchild Sanelly, BLK JKS, Awesome Tapes From Africa collective, Thandiswa Mazwai, Petite Noir, Mdou Moctar, Baloji
-- Eropa: Nils Frahm, Apparat, Brandt Brauer Frick, James Holden
-- Wilayah lain: Ibeyi, Blue Daisy, Shabazz Palaces, Kode9
-- Masing-masing dengan biografi lengkap, album, setidaknya 2 lagu dengan YouTube ID, koordinat, koneksi
-
-**Artis Tambahan Era Origins**:
-- Björk (Iceland) - debut era
-- Cocteau Twins/Elizabeth Fraser (Scotland)
-- On-U Sound/Adrian Sherwood (UK)
-- The Pop Group/Mark Stewart (UK)
-- Keith LeBlanc (USA)
-- Masing-masing dengan data lengkap: biografi, album, lagu dengan YouTube ID, koordinat, koneksi
-
-**Artis Tambahan Era Golden Age**:
-- Earthling (UK) - dengan enrichment lengkap
-- Antipop Consortium (USA)
-- Mono (UK)
-- Euphoria (UK)
-- Masing-masing dengan data lengkap: biografi, album, lagu dengan YouTube ID, koordinat, koneksi
-
-**Artis Tambahan Era Expansion**:
-- Emiliana Torrini (Iceland)
-- Bitter:Sweet (USA)
-- Charlotte Gainsbourg (France)
-- Lhasa de Sela (Canada/Mexico)
-- Múm (Iceland)
-- Erykah Badu (USA, neo-soul/trip-hop crossover)
-- Amy Winehouse (UK, adjacent production style)
-- Cibelle (Brazil)
-- Andreya Triana (UK)
-- BadBadNotGood (Canada)
-- Hiatus Kaiyote (Australia)
-- Esthero (Canada)
-- El Guincho (Spain/Canary Islands)
-- Khruangbin (USA)
-- Masing-masing dengan data lengkap: biografi, album, lagu dengan YouTube ID, koordinat, koneksi
-
-**Artis Tambahan Era Modern Hybrid**:
-- Kelsey Lu (USA)
-- billy woods (USA)
-- Bon Iver (USA, adjacent)
-- Beach House (USA, adjacent)
-- Jlin (USA)
-- Pinch (UK)
-- Raime (UK)
-- Darkside/Nicolas Jaar project (USA)
-- serpentwithfeet (USA)
-- Ibeyi (France/Cuba)
-- Blue Daisy (UK)
-- Shabazz Palaces (USA)
-- Kode9 (UK)
-- Meitei (Japan)
-- Foodman (Japan)
-- Ovall (Japan)
-- Nicola Cruz (Ecuador)
-- C.Tangana (Spain)
-- Ceu (Brazil)
-- Dengue Dengue Dengue (Peru)
-- Fatoumata Diawara (Mali)
-- Moonchild Sanelly (South Africa)
-- BLK JKS (South Africa)
-- Awesome Tapes From Africa collective (Ghana)
-- Thandiswa Mazwai (South Africa)
-- Petite Noir (South Africa/Belgium)
-- Mdou Moctar (Niger)
-- Baloji (DRC/Belgium)
-- Nils Frahm (Germany)
-- Apparat (Germany)
-- Brandt Brauer Frick (Germany)
-- James Holden (UK)
-- Masing-masing dengan data lengkap: biografi, album, lagu dengan YouTube ID, koordinat, koneksi
-
-### 4.9 Integrasi Songs Discovery
-
-**Data Lagu**:
-- Semua lagu di semua artis tersedia di Songs Discovery Panel
-- Setiap lagu mencakup: judul, nama artis, YouTube ID, tag mood, era
-
-**Logika Filter dan Pencarian**:
-- Filter mood mencocokkan lagu dengan tag mood yang dipilih
-- Filter era mencocokkan lagu dari era yang dipilih
-- Query pencarian mencocokkan judul lagu atau nama artis (case-insensitive, partial match)
-- Beberapa filter diterapkan dengan logika AND
-- Filtering real-time saat pengguna mengetik atau memilih filter
-
-**Integrasi dengan Playlist**:
-- Tombol Add to Playlist di Songs Discovery Panel menambahkan lagu ke playlist pribadi
-- Perilaku yang sama dengan Add to Playlist di panel lain
-
-## 5. Pengecualian dan Kasus Tepi
+## 5. Pengecualian dan Kasus Batas
 
 | Skenario | Penanganan |
 |----------|------------|
-| Artis/lagu tidak memiliki embed media yang tersedia | Menampilkan placeholder dengan penjelasan teks, menyediakan link eksternal jika tersedia |
-| Artis tidak memiliki cover album | Menggunakan placeholder yang dihasilkan dengan gaya arsip dengan nama artis |
-| Perangkat pengguna tidak mendukung rendering yang diperlukan | Menampilkan versi statis fallback dengan konten inti yang dapat diakses |
-| Kegagalan jaringan selama loading media | Menampilkan opsi retry, menampilkan konten yang di-cache jika tersedia |
-| Kombinasi filter tidak menghasilkan hasil | Menampilkan pesan dan menyarankan filter alternatif |
-| Artis tidak memiliki data geografis | Dihilangkan dari peta geografis, dipertahankan di peta genre |
-| Data pengaruh tidak lengkap | Menampilkan hanya koneksi yang tersedia |
-| Timeline slider di tahun batas | Menonaktifkan sliding lebih lanjut ke arah tersebut |
-| Pengguna mencoba mengekspor playlist kosong | Menampilkan pesan yang menunjukkan playlist kosong |
-| Link YouTube tidak tersedia selama ekspor playlist | Menyertakan teks placeholder untuk link yang tidak tersedia |
-| Lagu playlist terkurasi tidak memiliki link YouTube | Menampilkan lagu dengan catatan bahwa link tidak tersedia |
-| Pengguna menambahkan lagu yang sama beberapa kali | Memungkinkan duplikat dalam playlist pribadi |
-| Data playlist di hash URL rusak atau tidak valid | Mengabaikan hash yang tidak valid, memuat playlist kosong |
-| URL gambar artis tidak valid atau gagal dimuat | Menampilkan ikon placeholder default atau inisial nama artis |
-| Data playlist terlalu besar menyebabkan URL terlalu panjang | Mengompresi data JSON, memotong atau meminta pengguna jika perlu |
-| Otorisasi Spotify OAuth gagal | Menampilkan pesan error, memungkinkan pengguna untuk retry |
-| Pencarian Spotify API tidak mengembalikan hasil untuk lagu | Melewati lagu, mencatat kegagalan, melanjutkan dengan lagu yang tersisa |
-| Batas rate Spotify API terlampaui | Menampilkan pesan error, menyarankan retry nanti |
-| Pengguna menolak otorisasi Spotify | Kembali ke Playlist Panel, menampilkan pesan bahwa otorisasi diperlukan |
-| Filter Songs Discovery Panel tidak menghasilkan hasil | Menampilkan pesan yang menunjukkan tidak ada lagu yang cocok dengan filter |
-| Query pencarian Songs Discovery Panel tidak menghasilkan hasil | Menampilkan pesan yang menunjukkan tidak ada lagu yang cocok dengan pencarian |
+| Pengguna tidak terautentikasi | Redirect ke Halaman Login |
+| Node artis tidak memiliki lagu | Menampilkan pesan di Panel Artis yang menunjukkan tidak ada lagu tersedia |
+| Lagu tidak memiliki ID video YouTube | Menampilkan pesan di Panel Lagu yang menunjukkan pemutaran tidak tersedia |
+| Tidak ada artis yang cocok dengan filter yang dipilih | Menampilkan empty state di Canvas Peta Genre dengan pesan |
+| Playlist kosong | Menampilkan empty state di Pembuat Playlist dengan prompt untuk menambahkan lagu |
+| URL playlist yang dibagikan tidak valid | Menampilkan pesan error dan redirect ke Pembuat Playlist kosong |
+| Ekspor Spotify gagal | Menampilkan pesan error dengan opsi retry |
+| Error jaringan saat memuat data | Menampilkan pesan error dengan opsi retry |
+| Pencarian artis tidak menemukan hasil | Menampilkan pesan bahwa tidak ada artis yang cocok |
+| Daftar artis kosong karena filter | Menampilkan pesan bahwa tidak ada artis di era yang dipilih |
 
 ## 6. Kriteria Penerimaan
 
-1. Pengguna mengakses halaman, Main Map Canvas menampilkan empat node era dengan database artis yang diperluas, semua artis yang ditentukan diposisikan pada canvas berdasarkan koordinat x berbasis era, setiap node artis menampilkan thumbnail melingkar dengan filter monokrom biru tua yang diterapkan
-2. Pengguna mengklik node FKA Twigs di bagian Modern Hybrid di sisi kanan
-3. Artist Archive Panel terbuka menampilkan biografi lengkap, timeline album, embedded media player, dan tombol Add to Playlist
-4. Pengguna mengklik tombol Add to Playlist pada salah satu lagu FKA Twigs
-5. Pengguna membuka Playlist Panel, melihat lagu ditambahkan ke playlist pribadi dengan link YouTube
-6. Pengguna mengklik tombol Export to Spotify, sistem redirect ke halaman otorisasi Spotify
-7. Pengguna mengotorisasi aplikasi, sistem redirect kembali dan membuat playlist Spotify dengan lagu dari playlist pribadi
-8. Pengguna melihat pesan sukses dengan link ke playlist Spotify yang dibuat
-9. Pengguna membuka Songs Discovery Panel, melihat daftar semua lagu di semua artis
-10. Pengguna menerapkan filter mood untuk dark dan mencari portishead, melihat daftar lagu yang difilter
-11. Pengguna mengklik Add to Playlist pada lagu dari Songs Discovery Panel, lagu ditambahkan ke playlist pribadi
-12. Pengguna hover di atas garis koneksi antara dua artis pada Main Map Canvas, melihat tooltip yang menjelaskan tipe hubungan dan konteks
+1. Pengguna membuka aplikasi dan melihat Layar Splash Intro
+2. Pengguna menutup layar splash dan navigasi ke Halaman Login
+3. Pengguna memasukkan username dan password, klik login, dan berhasil terautentikasi melalui Supabase
+4. Pengguna melihat antarmuka aplikasi utama dengan Canvas Peta Genre Interaktif yang menampilkan 280+ node artis
+5. Pengguna mengklik node artis, Panel Artis terbuka menampilkan detail artis, album, dan lagu
+6. Pengguna mengklik lagu di Panel Artis, Panel Lagu terbuka dengan detail lagu dan pemutaran YouTube dimulai
+7. Pengguna memilih tag suasana hati di Sidebar Filter Suasana Hati, Canvas Peta Genre diperbarui untuk menampilkan hanya artis yang cocok
+8. Pengguna menyesuaikan Timeline Scrubber untuk memfilter berdasarkan rentang tahun, Canvas Peta Genre dan Panel Penemuan Lagu diperbarui sesuai
+9. Pengguna mengklik lagu di Panel Penemuan Lagu, menambahkan ke Pembuat Playlist
+10. Pengguna menghasilkan URL yang dapat dibagikan untuk playlist, menyalin URL, dan membagikan dengan pengguna lain
+11. Pengguna mengetik nama artis di input pencarian, hasil pencarian menampilkan kartu artis yang cocok dengan highlight nama
+12. Pengguna membuka Halaman Daftar Artis, melihat 151 artis dengan informasi ringkas, mengurutkan berdasarkan A-Z, dan memfilter berdasarkan era
 
 ## 7. Tidak Termasuk dalam Rilis Ini
 
-- Akun pengguna dan personalisasi
-- Fitur berbagi sosial di luar berbagi URL playlist
-- Komentar atau rating pengguna
-- Sistem pengajuan artis
-- Versi aplikasi mobile
-- Mode offline
+- Kustomisasi profil pengguna (avatar, bio, preferensi)
+- Fitur sosial (follow artis, berbagi playlist dengan teman, komentar)
+- Fungsionalitas pencarian lanjutan (pencarian full-text di seluruh artis, album, lagu)
+- Mode offline atau kemampuan progressive web app
 - Dukungan multi-bahasa
-- Fitur aksesibilitas di luar standar web dasar
-- Integrasi dengan layanan streaming musik eksternal di luar ekspor Spotify dan embed
-- Fungsi pembelian atau download
-- Informasi konser atau acara
-- Integrasi merchandise
-- Newsletter atau sistem notifikasi
-- Analitik atau tracking lanjutan
-- Fitur komunitas
-- Editing kolaboratif
-- Kolaborasi atau berbagi playlist antar pengguna di luar berbagi URL
-- Fungsi sorting atau reordering playlist
-- Fungsi pencarian playlist dalam playlist pribadi
-- Ekspor ke Apple Music, YouTube Music, atau platform streaming lain di luar Spotify
-- Sinkronisasi playlist otomatis dengan Spotify
-- Kontrol pemutaran Spotify dalam aplikasi
+- Panel admin untuk mengelola data artis/lagu
+- Integrasi dengan layanan streaming musik selain Spotify
+- Aplikasi native mobile (iOS/Android)
+- Pengeditan playlist kolaboratif
+- Rekomendasi lagu berdasarkan riwayat mendengarkan
+- Konten yang dibuat pengguna (ulasan, rating, tag kustom)
+- Visualisasi audio di luar panel Sound DNA
+- Ekspor playlist ke format selain Spotify
+- Shortcut keyboard untuk navigasi dan kontrol pemutaran
+- Fitur aksesibilitas di luar HTML semantik dasar

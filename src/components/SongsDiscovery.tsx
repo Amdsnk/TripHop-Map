@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { X, Search, Play, Plus, Music, ExternalLink } from 'lucide-react';
+import { X, Search, Play, Plus, Music, Pause, ExternalLink } from 'lucide-react';
 import { ARTISTS, type MoodTag, type EraId, type Song } from '@/data/artists';
 import { type PlaylistTrack } from '@/data/playlists';
 import { toast } from 'sonner';
@@ -53,6 +53,11 @@ function moodColor(m: MoodTag): string {
   return map[m] ?? 'text-muted-foreground border-border';
 }
 
+interface NowPlaying {
+  entry: SongEntry;
+  youtubeId: string;
+}
+
 interface SongsDiscoveryProps {
   onClose: () => void;
   onAddToPlaylist: (track: PlaylistTrack) => void;
@@ -64,6 +69,7 @@ export default function SongsDiscovery({ onClose, onAddToPlaylist, onSelectSong 
   const [activeMoods, setActiveMoods] = useState<MoodTag[]>([]);
   const [activeEras, setActiveEras] = useState<EraId[]>([]);
   const [page, setPage] = useState(0);
+  const [nowPlaying, setNowPlaying] = useState<NowPlaying | null>(null);
   const PAGE_SIZE = 30;
 
   const filtered = useMemo(() => {
@@ -101,6 +107,18 @@ export default function SongsDiscovery({ onClose, onAddToPlaylist, onSelectSong 
     toast.success(`Added "${entry.song.title}" to playlist.`);
   };
 
+  const handlePlay = (entry: SongEntry) => {
+    if (!entry.song.youtubeId) return;
+    if (nowPlaying?.entry.song.id === entry.song.id) {
+      setNowPlaying(null);
+    } else {
+      setNowPlaying({ entry, youtubeId: entry.song.youtubeId });
+    }
+  };
+
+  const isPlaying = (entry: SongEntry) =>
+    nowPlaying?.entry.song.id === entry.song.id;
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -119,6 +137,49 @@ export default function SongsDiscovery({ onClose, onAddToPlaylist, onSelectSong 
           <X className="w-4 h-4" />
         </button>
       </div>
+
+      {/* Now Playing embed */}
+      {nowPlaying && (
+        <div className="flex-shrink-0 border-b border-border bg-black/40">
+          <div className="flex items-center justify-between px-4 pt-2 pb-1">
+            <div className="min-w-0 flex-1">
+              <div className="text-xs font-mono text-accent truncate">▶ {nowPlaying.entry.song.title}</div>
+              <div className="text-xs text-muted-foreground/60 truncate" style={{ fontSize: '0.6rem' }}>
+                {nowPlaying.entry.artistName} · {nowPlaying.entry.song.year}
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0 ml-2">
+              <a
+                href={`https://www.youtube.com/watch?v=${nowPlaying.youtubeId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
+                title="Open on YouTube"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <button
+                onClick={() => setNowPlaying(null)}
+                className="p-1 text-muted-foreground/50 hover:text-foreground transition-colors"
+                title="Close player"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className="w-full" style={{ aspectRatio: '16/9' }}>
+            <iframe
+              key={nowPlaying.youtubeId}
+              src={`https://www.youtube.com/embed/${nowPlaying.youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+              title={nowPlaying.entry.song.title}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              className="w-full h-full"
+              style={{ border: 'none', display: 'block' }}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Search */}
       <div className="flex-shrink-0 px-4 py-2 border-b border-border">
@@ -180,13 +241,21 @@ export default function SongsDiscovery({ onClose, onAddToPlaylist, onSelectSong 
         ) : (
           <div className="divide-y divide-border/20">
             {visible.map(entry => (
-              <div key={`${entry.artistId}-${entry.song.id}`} className="group flex items-start gap-2 px-4 py-2.5 hover:bg-accent/5 transition-colors">
+              <div
+                key={`${entry.artistId}-${entry.song.id}`}
+                className={`group flex items-start gap-2 px-4 py-2.5 transition-colors ${
+                  isPlaying(entry) ? 'bg-accent/10 border-l-2 border-l-accent' : 'hover:bg-accent/5'
+                }`}
+              >
                 <div className="flex-1 min-w-0">
                   <button
                     className="text-left w-full"
                     onClick={() => onSelectSong?.(entry)}
                   >
-                    <div className="text-xs font-mono text-foreground/90 truncate group-hover:text-foreground transition-colors">
+                    <div className={`text-xs font-mono truncate transition-colors ${
+                      isPlaying(entry) ? 'text-accent' : 'text-foreground/90 group-hover:text-foreground'
+                    }`}>
+                      {isPlaying(entry) && <span className="mr-1">▶</span>}
                       {entry.song.title}
                     </div>
                     <div className="text-xs text-muted-foreground truncate">
@@ -206,36 +275,30 @@ export default function SongsDiscovery({ onClose, onAddToPlaylist, onSelectSong 
                 </div>
                 <div className="flex items-center gap-0.5 shrink-0">
                   {entry.song.youtubeId ? (
+                    <button
+                      onClick={() => handlePlay(entry)}
+                      className={`p-1 transition-colors ${
+                        isPlaying(entry)
+                          ? 'text-accent'
+                          : 'text-accent/60 hover:text-accent'
+                      }`}
+                      title={isPlaying(entry) ? 'Stop' : 'Play'}
+                    >
+                      {isPlaying(entry)
+                        ? <Pause className="w-3 h-3" />
+                        : <Play className="w-3 h-3" />
+                      }
+                    </button>
+                  ) : (
                     <a
-                      href={`https://www.youtube.com/watch?v=${entry.song.youtubeId}`}
+                      href={`https://www.youtube.com/results?search_query=${encodeURIComponent(entry.song.title + ' ' + entry.artistName)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="p-1 text-accent/60 hover:text-accent transition-colors"
-                      title="Play on YouTube"
+                      className="p-1 text-muted-foreground/30 hover:text-muted-foreground transition-colors"
+                      title="Search on YouTube"
                     >
-                      <Play className="w-3 h-3" />
+                      <Music className="w-3 h-3" />
                     </a>
-                  ) : (
-                    <div className="flex flex-col gap-1">
-                      <a
-                        href={`https://soundcloud.com/search?q=${encodeURIComponent(entry.song.title + ' ' + entry.artistName)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 text-accent/60 hover:text-accent transition-colors"
-                        title="Search on SoundCloud"
-                      >
-                        <Music className="w-3 h-3" />
-                      </a>
-                      <a
-                        href={`https://www.youtube.com/results?search_query=${encodeURIComponent(entry.song.title + ' ' + entry.artistName)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="p-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors"
-                        title="Search on YouTube"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    </div>
                   )}
                   <button
                     onClick={() => handleAdd(entry)}
