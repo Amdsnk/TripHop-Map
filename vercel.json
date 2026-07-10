@@ -1,4 +1,5 @@
 {
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run typecheck:libs && pnpm --filter \"@workspace/api-server\" --filter \"@workspace/api-zod\" --filter \"@workspace/db\" run build --if-present"
+  "buildCommand": "pnpm run typecheck:libs && pnpm --filter \"@workspace/api-server\" --filter \"@workspace/api-zod\" --filter \"@workspace/db\" run build --if-present",
+  "outputDirectory": "public"
 }
