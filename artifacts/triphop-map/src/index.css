@@ -1,0 +1,314 @@
+/* stylelint-disable */
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+   TRIP-HOP ARCHIVE MAP — Design System
+   Bristol Underground × Analog Archive aesthetic
+   Deep monochromatic blues, CRT noise, analog grain
+   ============================================================ */
+
+@layer base {
+  :root {
+    --radius: 0px;
+
+    /* Core palette — deep monochromatic blues */
+    --background: 213 54% 5%;        /* #060B12 */
+    --foreground: 205 22% 76%;       /* #B8C8D4 */
+    --card: 212 45% 10%;             /* #0E1A26 = muted */
+    --card-foreground: 205 22% 76%;
+    --popover: 212 45% 10%;
+    --popover-foreground: 205 22% 76%;
+    --primary: 211 55% 23%;          /* #1A3A5C */
+    --primary-foreground: 210 35% 84%; /* #C8D8E8 */
+    --secondary: 212 62% 14%;        /* #0D2035 */
+    --secondary-foreground: 210 35% 84%;
+    --muted: 212 45% 10%;            /* #0E1A26 */
+    --muted-foreground: 210 25% 55%;
+    --accent: 211 62% 42%;           /* #2A6FAD */
+    --accent-foreground: 210 50% 94%; /* #E8F0F8 */
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 211 45% 18%;           /* #1C3045 */
+    --input: 211 45% 18%;
+    --ring: 211 62% 42%;
+
+    /* Chart blues */
+    --chart-1: 211 62% 42%;
+    --chart-2: 210 80% 60%;
+    --chart-3: 200 50% 30%;
+    --chart-4: 220 40% 55%;
+    --chart-5: 195 70% 45%;
+
+    /* Sidebar matches card */
+    --sidebar-background: 212 45% 10%;
+    --sidebar-foreground: 205 22% 76%;
+    --sidebar-primary: 211 62% 42%;
+    --sidebar-primary-foreground: 210 50% 94%;
+    --sidebar-accent: 211 55% 23%;
+    --sidebar-accent-foreground: 210 35% 84%;
+    --sidebar-border: 211 45% 18%;
+    --sidebar-ring: 211 62% 42%;
+
+    /* Custom archival tokens */
+    --glow-accent: 0 0 12px rgba(42, 111, 173, 0.7), 0 0 32px rgba(42, 111, 173, 0.3);
+    --glow-soft: 0 0 8px rgba(42, 111, 173, 0.4);
+    --shadow-deep: 0 8px 32px rgba(0, 0, 0, 0.8);
+    --gradient-primary: linear-gradient(135deg, hsl(211 55% 23%) 0%, hsl(211 62% 42%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(212 45% 10%) 0%, hsl(213 54% 5%) 100%);
+    --gradient-background: linear-gradient(180deg, hsl(213 54% 5%) 0%, hsl(212 62% 8%) 100%);
+    --shadow-card: 0 2px 12px rgba(0,0,0,0.6);
+    --shadow-hover: 0 4px 20px rgba(42,111,173,0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--border)) transparent;
+  }
+
+  html {
+    background: hsl(var(--background));
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Space Mono', monospace;
+    overflow: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+}
+
+/* ============================================================
+   GRAIN OVERLAY — SVG turbulence filter across viewport
+   ============================================================ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9998;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+}
+
+/* ============================================================
+   CRT SCANLINES — horizontal repeating lines
+   ============================================================ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.03) 2px,
+    rgba(0, 0, 0, 0.03) 4px
+  );
+}
+
+/* ============================================================
+   BLUE MONOCHROME IMAGE TREATMENT
+   Applied via class .img-blue-mono
+   ============================================================ */
+.img-blue-mono {
+  filter: grayscale(100%) sepia(100%) hue-rotate(190deg) saturate(250%) brightness(0.65);
+}
+
+.img-blue-mono-bright {
+  filter: grayscale(100%) sepia(100%) hue-rotate(190deg) saturate(300%) brightness(0.8);
+}
+
+/* ============================================================
+   BLUE GLOW EFFECTS
+   ============================================================ */
+.glow-accent {
+  box-shadow: var(--glow-accent);
+}
+
+.glow-soft {
+  box-shadow: var(--glow-soft);
+}
+
+.text-glow {
+  text-shadow: 0 0 10px rgba(42, 111, 173, 0.8), 0 0 24px rgba(42, 111, 173, 0.4);
+}
+
+/* ============================================================
+   VHS GLITCH ANIMATION
+   ============================================================ */
+@keyframes vhs-glitch {
+  0%, 100% { transform: translate(0); clip-path: none; }
+  10% { transform: translate(-2px, 0); }
+  20% { transform: translate(2px, 0); }
+  30% { transform: translate(-1px, 0); clip-path: polygon(0 30%, 100% 30%, 100% 35%, 0 35%); }
+  40% { clip-path: none; transform: translate(0); }
+  50% { transform: translate(1px, -1px); }
+  60% { transform: translate(-1px, 1px); clip-path: polygon(0 60%, 100% 60%, 100% 62%, 0 62%); }
+  70% { clip-path: none; transform: translate(0); }
+}
+
+.glitch-animate {
+  animation: vhs-glitch 0.15s steps(1) forwards;
+}
+
+/* ============================================================
+   NODE HOVER GLOW PULSE
+   ============================================================ */
+@keyframes node-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(42, 111, 173, 0.4); }
+  50% { box-shadow: 0 0 20px rgba(42, 111, 173, 0.8), 0 0 40px rgba(42, 111, 173, 0.3); }
+}
+
+.node-pulse {
+  animation: node-pulse 2s ease-in-out infinite;
+}
+
+/* ============================================================
+   ARCHIVAL PANEL SLIDE-IN
+   ============================================================ */
+@keyframes panel-slide-up {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.panel-enter {
+  animation: panel-slide-up 0.4s ease-out forwards;
+}
+
+/* ============================================================
+   DITHERED GRADIENT BACKGROUND CLASS
+   ============================================================ */
+.dither-bg {
+  background-image: 
+    radial-gradient(ellipse at 20% 50%, rgba(26, 58, 92, 0.4) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(42, 111, 173, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(13, 32, 53, 0.6) 0%, transparent 40%);
+}
+
+/* ============================================================
+   ARCHIVAL TYPE STYLES
+   ============================================================ */
+.archival-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.625rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+}
+
+.archival-title {
+  font-family: 'Space Mono', monospace;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: hsl(var(--foreground));
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 0;
+}
+
+/* ============================================================
+   MOOD TAG STYLES
+   ============================================================ */
+.mood-tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border: 1px solid hsl(var(--border));
+  font-size: 0.625rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-family: 'Space Mono', monospace;
+  color: hsl(var(--muted-foreground));
+  background: transparent;
+  transition: all 0.2s;
+}
+
+.mood-tag.active {
+  border-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  background: rgba(42, 111, 173, 0.15);
+  box-shadow: 0 0 8px rgba(42, 111, 173, 0.3);
+}
+
+/* ============================================================
+   XEROX/OFFSET PRINT TEXTURE ON BORDERS
+   ============================================================ */
+.xerox-border {
+  border: 1px solid hsl(var(--border));
+  box-shadow: inset 0 0 0 1px rgba(42, 111, 173, 0.05);
+}
+
+/* ============================================================
+   LOADING SPINNER
+   ============================================================ */
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+/* ============================================================
+   INFLUENCE LINE GLOW
+   ============================================================ */
+.influence-line {
+  stroke: rgba(42, 111, 173, 0.35);
+  stroke-dasharray: 6 4;
+  stroke-width: 1;
+}
+
+/* ============================================================
+   DEEP CUTS SECTION
+   ============================================================ */
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.4; }
+}
+
+.flicker-text {
+  animation: flicker 4s linear infinite;
+}
+
+/* ============================================================
+   PARTICLE CANVAS
+   ============================================================ */
+#bg-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+#map-canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+
+#map-canvas:active {
+  cursor: grabbing;
+}

@@ -1,0 +1,1 @@
+- [Vercel/v0 import data-shape bugs](vercel-import-data-bugs.md) — large hand-authored data files in imported apps often mix record types or omit "required" fields; verify with typecheck + runtime, don't assume the shape is clean.
