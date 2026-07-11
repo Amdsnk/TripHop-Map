@@ -95,17 +95,6 @@ export const ERA_NODES = {
   },
 };
 
-export interface DeepCut {
-  id: string;
-  title: string;
-  artist: string;
-  year: number;
-  label: string;
-  description: string;
-  mood: MoodTag[];
-  youtubeId?: string;
-}
-
 export const ARTISTS: Artist[] = [
   {
     id: 'massive-attack',
@@ -6037,15 +6026,17 @@ export const ARTISTS: Artist[] = [
   },
 ];
 
-// Some artist entries omit `songs` entirely; normalize to an empty array so
-// consumers can safely call `.map`/`.forEach`/`.length` without guards.
-ARTISTS.forEach(artist => {
-  if (!artist.songs) {
-    artist.songs = [];
-  }
-});
+export interface DeepCut {
+  id: string;
+  title: string;
+  artist: string;
+  year: number;
+  label: string;
+  description: string;
+  mood: MoodTag[];
+  youtubeId?: string;
+}
 
-/** Underground/rare selections surfaced in the "Deep Cuts" archive panel. */
 export const DEEP_CUTS: DeepCut[] = [
   {
     id: 'dc-1',
