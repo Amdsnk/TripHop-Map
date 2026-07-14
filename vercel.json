@@ -1,5 +1,8 @@
 {
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm run typecheck:libs && pnpm --filter \"@workspace/api-server\" --filter \"@workspace/api-zod\" --filter \"@workspace/db\" run build --if-present",
-  "outputDirectory": "public"
+  "buildCommand": "pnpm --filter @workspace/triphop-map run build",
+  "outputDirectory": "artifacts/triphop-map/dist/public",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
 }
