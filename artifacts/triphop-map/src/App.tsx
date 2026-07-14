@@ -268,7 +268,7 @@ export default function App() {
                   { icon: <Radio className="w-3.5 h-3.5" />, label: 'CUTS', panel: 'deepcuts' as RightPanel },
                   { icon: <Music className="w-3.5 h-3.5" />, label: 'SONGS', panel: 'songs' as RightPanel },
                   { icon: <BookOpen className="w-3.5 h-3.5" />, label: 'WIKI', panel: 'wiki' as RightPanel },
-                  { icon: <Search className="w-3.5 h-3.5" />, label: 'CARI', panel: 'search' as RightPanel },
+                  { icon: <Search className="w-3.5 h-3.5" />, label: 'SEARCH', panel: 'search' as RightPanel },
                   { icon: <Users className="w-3.5 h-3.5" />, label: 'ARTIS', panel: 'artistlist' as RightPanel },
                   {
                     icon: (

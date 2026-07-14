@@ -75,7 +75,7 @@ export default function ArtistSearch({ onClose, onSelectArtist }: Props) {
             ref={inputRef}
             value={query}
             onChange={e => setQuery(e.target.value)}
-            placeholder="Cari nama artis atau kota..."
+            placeholder="Search artist or city..."
             className="w-full bg-background/60 border border-border rounded pl-9 pr-9 py-2 text-sm font-mono text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-accent/50 transition-colors"
           />
           {query && (
