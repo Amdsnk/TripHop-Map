@@ -42,3 +42,7 @@ All 9 target artists now have real YouTube IDs sourced from Last.fm tracklist pa
 | Kruder & Dorfmeister | 10 | Fixed mislabeled "Definition" and "Boogie Woogie" IDs (both pointed to wrong videos), added 8 from The K&D Sessions (1998) |
 | Sneaker Pimps | 10 | Already at 10 by count, but 2 of the 10 IDs were dead links — replaced both from the Becoming X Last.fm page |
 | Sofa Surfers | 10 | Renamed a mislabeled "Astronaut" entry to match its actual video ("In Vain feat. Jonny Sass"), added 8 from Sofa Surfers (1997) + Transit (1999) |
+| Blue States | 10 | Old single "Mica" entry's video actually played a different song ("Down the Days") — dropped it entirely, rebuilt with 10 verified tracks from Man Mountain (2002) + Nothing Changes Under the Sun (2003); also fixed bio (artist is Andy Dragazis, not "Andy Dobson") |
+| La Funk Mob | 10 | Fixed a bug where 2 different songs shared the same youtubeId; rebuilt with 10 verified tracks across Motor Bass Get Phunked Up!, The Bad Seeds 1993-1997, and Tribulations Extra Sensorielles |
+| Stateless | 10 | Removed a duplicate "Bloodstream" entry and an unverifiable "Gold" track with a fabricated cover claim ("later covered by Ed Sheeran" — false); rebuilt as the real 10-track Stateless (2007) album tracklist |
+| Bomb The Bass | 10 | Added 7 verified tracks from Into The Dragon (1988) and Clear (1995) to the existing 3, giving full coverage across all 3 albums mentioned in the bio |
