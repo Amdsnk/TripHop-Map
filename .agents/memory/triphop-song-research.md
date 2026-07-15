@@ -17,6 +17,10 @@ Always check the MoodTag union type at line 1 of artists.ts before adding moods.
 - Invalid: 'ambient' → use 'ethereal'
 - Invalid: 'mystical' → use 'mysterious'
 
+## Verify with YouTube oEmbed, not just Last.fm presence
+A Last.fm tracklist link existing is not proof the video plays or matches the song. In one pass, ~15% of candidate/even pre-existing IDs were dead (404) or pointed to the wrong song/artist entirely (e.g. an existing "Kruder & Dorfmeister - Definition" entry actually linked to an unrelated artist's video; a "Boogie Woogie" entry linked to an unrelated live-show video; a Bitter:Sweet "Mating Game" entry linked to a different song).
+**How to apply:** after sourcing IDs from Last.fm, verify each with `fetch('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=<id>&format=json')` inside a `"use impure"` block (plain `fetch`, not the `webFetch` tool, works for this YouTube endpoint). Check `resp.ok` and that the returned `title` plausibly matches the artist/song — a 404 or a mismatched title means find another source. Fix any pre-existing mislabeled entries you discover this way (rename title to match reality, or replace the ID) rather than leaving them.
+
 ## Song Research Status (completed July 2026)
 All 9 target artists now have real YouTube IDs sourced from Last.fm tracklist pages:
 
@@ -31,3 +35,10 @@ All 9 target artists now have real YouTube IDs sourced from Last.fm tracklist pa
 | Bent | 10 | Added 8: PTL (Exercise 1, Cylons in Love, I Love My Man, Invisible Pedestrian) + TEB (King Wisp, An Ordinary Day, Magic Love, Strictly Bongo) |
 | Kid Loco | 10 | Added 8 from A Grand Love Story album |
 | Skylab | 10 | Added 8 from #1 album (River of Bass, Seashell, Depart, Ghost Dance, Tokyo 1, Indigo, Electric Blue, Six Nine) |
+| Smoke City | 10 | Added 2 more from Heroes of Nature (2001): Can You Feel That?, Little Elina |
+| Beth Gibbons & Rustin Man | 10 | Already at 10, verified all IDs play |
+| Kosheen | 10 | Added 7 from Resist (2001): Demonstrate, Cover, Harder, Empty Skies, Resist, Face in a Crowd, Pride |
+| Bitter:Sweet | 10 | Removed a duplicate "Dirty Laundry" entry, fixed a mislabeled "Mating Game" ID, added 7 from The Mating Game (2006) |
+| Kruder & Dorfmeister | 10 | Fixed mislabeled "Definition" and "Boogie Woogie" IDs (both pointed to wrong videos), added 8 from The K&D Sessions (1998) |
+| Sneaker Pimps | 10 | Already at 10 by count, but 2 of the 10 IDs were dead links — replaced both from the Becoming X Last.fm page |
+| Sofa Surfers | 10 | Renamed a mislabeled "Astronaut" entry to match its actual video ("In Vain feat. Jonny Sass"), added 8 from Sofa Surfers (1997) + Transit (1999) |
