@@ -46,3 +46,9 @@ All 9 target artists now have real YouTube IDs sourced from Last.fm tracklist pa
 | La Funk Mob | 10 | Fixed a bug where 2 different songs shared the same youtubeId; rebuilt with 10 verified tracks across Motor Bass Get Phunked Up!, The Bad Seeds 1993-1997, and Tribulations Extra Sensorielles |
 | Stateless | 10 | Removed a duplicate "Bloodstream" entry and an unverifiable "Gold" track with a fabricated cover claim ("later covered by Ed Sheeran" — false); rebuilt as the real 10-track Stateless (2007) album tracklist |
 | Bomb The Bass | 10 | Added 7 verified tracks from Into The Dragon (1988) and Clear (1995) to the existing 3, giving full coverage across all 3 albums mentioned in the bio |
+| Laika | 10 | Added 7 from Silver Apples of the Moon (1994) + Wherever I Am I Am What Is Missing (2003) |
+| Submotion Orchestra | 10 | Fixed 3 mislabeled album/year fields (real albums are Kites 2018, Alium 2015, not the fabricated "Colour the Air"); a "Don't Stop" entry's video was actually "Ten Years" (2023 single) — renamed rather than dropped since the ID was valid; added 5 from Finest Hour (2011) |
+| Bonobo | 10 | Fixed Kong's wrong album/year (it's on Black Sands 2010, not a fictional "Kong" 2003 album); added 8 more from Black Sands |
+| Lamb | 10 | Removed an exact-duplicate "Gorecki" entry (same youtubeId twice), added 3 from the 1996 self-titled debut |
+| Supreme Beings of Leisure | 10 | Fixed 2 mislabeled entries: "Strangelove Addiction" pointed to "Never the Same"'s video (fixed ID, then added "Never the Same" separately using the recovered ID); "Ain't What You Think" pointed to "Ain't Got Nothin'"'s video (renamed). Added 6 more from the 2000 debut |
+| Boozoo Bajou | 10 | Fixed "Satta" ID which pointed to a full-album upload, not the single track (found correct single via Last.fm track page's YouTube thumbnail link); added 9 from Dust My Broom (2001) |
