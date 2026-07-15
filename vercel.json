@@ -1,0 +1,6 @@
+{
+  "buildCommand": "pnpm run typecheck && pnpm --filter @workspace/triphop-map run build",
+  "outputDirectory": "artifacts/triphop-map/dist/public",
+  "installCommand": "pnpm install",
+  "framework": null
+}
