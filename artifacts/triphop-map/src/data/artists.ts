@@ -2294,7 +2294,7 @@ export const ARTISTS: Artist[] = [
         mood: ['melancholic', 'atmospheric', 'warm', 'dreamy', 'serene'],
         bpm: 76,
         key: 'G major',
-        youtubeId: 'Xq1pTf9tI8g',
+        soundcloudUrl: 'https://soundcloud.com/aim-atic-records/sail',
       },
     ],
     x: 1360,
