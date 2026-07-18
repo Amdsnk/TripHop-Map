@@ -1,51 +1,70 @@
 /**
  * bandcampAdditions.ts
  *
- * Bandcamp track / album URLs for songs with no YouTube ID and no SoundCloud URL.
- * Maps song.id → Bandcamp URL (track page when available, album page as fallback).
+ * Bandcamp embedded-player URLs for songs with no YouTube ID and no SoundCloud URL.
+ * Maps song.id → Bandcamp EmbeddedPlayer iframe src URL.
  *
- * The SongPanel shows a "Listen on Bandcamp" link when no YouTube / SoundCloud
- * embed is available.
+ * Embed format:
+ *   album=ALBUM_ID                — plays from track 1
+ *   album=ALBUM_ID/track=TRACK_ID — plays a specific track
+ *
+ * All IDs verified via the Bandcamp mobile API (band_details + tralbum_details).
+ * bgcol=1a2a3a matches the app's dark theme. linkcol=7ea8c0 is the accent blue.
  */
-export const BANDCAMP_ADDITIONS: Record<string, string> = {
+
+const BASE = 'https://bandcamp.com/EmbeddedPlayer';
+const THEME = 'bgcol=1a2a3a/linkcol=7ea8c0/tracklist=false/artwork=small/transparent=true/';
+
+function albumEmbed(albumId: number): string {
+  return `${BASE}/album=${albumId}/size=large/${THEME}`;
+}
+
+function trackEmbed(albumId: number, trackId: number): string {
+  return `${BASE}/album=${albumId}/size=large/${THEME}track=${trackId}/`;
+}
+
+export const BANDCAMP_EMBEDS: Record<string, string> = {
   // ── DJ Food ──────────────────────────────────────────────────────────────
-  'djf-scratch-yer-hed':          'https://djfood.bandcamp.com/track/scratch-yer-hed',
-  'djf-consciousness-is-king':    'https://djfood.bandcamp.com/album/a-recipe-for-disaster',
-  'djf-raiding-the-20th-century': 'https://djfood.bandcamp.com/album/raiding-the-20th-century',
-  'djf-media-fat-man':            'https://djfood.bandcamp.com/album/kaleidoscope',
+  // A Recipe For Disaster (album_id=1277706311)
+  'djf-scratch-yer-hed':          trackEmbed(1277706311, 3772615428),   // "Scratch Yer Hed" — exact match
+  'djf-consciousness-is-king':    albumEmbed(1277706311),               // closest album available
+  'djf-media-fat-man':            albumEmbed(53792770),                 // Kaleidoscope album
 
-  // ── Cantoma (See In The Sun 2019 — confirmed track pages) ─────────────────
-  'cantoma-summer-rain': 'https://cantomamusic.bandcamp.com/track/summer-rain-ft-andre-espeut',
-  'cantoma-see-in-the-sun': 'https://cantomamusic.bandcamp.com/album/see-in-the-sun',
-
-  // ── Cantoma (self-titled 2007 — album fallback) ───────────────────────────
-  'cantoma-verbana':    'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-a-far-cry':  'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-andalucia':  'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-samode':     'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-sunrise':    'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-the-garden': 'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-atlantic':   'https://cantomamusic.bandcamp.com/album/cantoma-2',
-  'cantoma-warm-breeze':'https://cantomamusic.bandcamp.com/album/cantoma-2',
+  // ── Cantoma ───────────────────────────────────────────────────────────────
+  // See In The Sun (album_id=3939564369) — 2019 release, most tracks confirmed
+  'cantoma-summer-rain':  trackEmbed(3939564369, 1096534581),  // "Summer Rain Ft Andre Espeut"
+  'cantoma-see-in-the-sun': albumEmbed(3939564369),
+  // Self-titled 2007 tracks not on Bandcamp separately — use See In The Sun as closest
+  'cantoma-verbana':      albumEmbed(3939564369),
+  'cantoma-a-far-cry':    albumEmbed(3939564369),
+  'cantoma-andalucia':    albumEmbed(3939564369),
+  'cantoma-samode':       albumEmbed(3939564369),
+  'cantoma-sunrise':      albumEmbed(3939564369),
+  'cantoma-the-garden':   albumEmbed(3939564369),
+  'cantoma-atlantic':     albumEmbed(3939564369),
+  'cantoma-warm-breeze':  albumEmbed(3939564369),
 
   // ── Tosca ────────────────────────────────────────────────────────────────
-  'tosca-short-stories': 'https://toscak7.bandcamp.com/album/no-hassle',
-  'tosca-honey':         'https://toscak7.bandcamp.com/album/no-hassle',
-  'tosca-boom':          'https://toscak7.bandcamp.com/album/dehli-9-remastered',
+  // No Hassle (album_id=1760185224)
+  'tosca-short-stories':  albumEmbed(1760185224),
+  'tosca-honey':          albumEmbed(1760185224),
+  // Dehli 9 Remastered (album_id=1516302163)
+  'tosca-boom':           albumEmbed(1516302163),
 
   // ── A Reminiscent Drive ──────────────────────────────────────────────────
-  'ard-mercury':        'https://theareminiscentdrivearchives.bandcamp.com/album/one',
-  'ard-sundance':       'https://theareminiscentdrivearchives.bandcamp.com/album/one',
-  'ard-carousel':       'https://theareminiscentdrivearchives.bandcamp.com/album/one',
-  'ard-smoky-mountains':'https://theareminiscentdrivearchives.bandcamp.com/',
-  'ard-hypnotize':      'https://theareminiscentdrivearchives.bandcamp.com/',
-  'ard-what-goes-around':'https://theareminiscentdrivearchives.bandcamp.com/',
-  'ard-breathe':        'https://theareminiscentdrivearchives.bandcamp.com/',
-  'ard-ambrosia':       'https://theareminiscentdrivearchives.bandcamp.com/',
-  'ard-when-words-fail':'https://theareminiscentdrivearchives.bandcamp.com/',
-  'ard-something-real': 'https://theareminiscentdrivearchives.bandcamp.com/',
+  // ONE (album_id=212501448), TWO (2947464605), THREE (285485492)
+  'ard-mercury':          albumEmbed(212501448),
+  'ard-sundance':         albumEmbed(212501448),
+  'ard-carousel':         albumEmbed(212501448),
+  'ard-smoky-mountains':  albumEmbed(2947464605),
+  'ard-hypnotize':        albumEmbed(2947464605),
+  'ard-what-goes-around': albumEmbed(2947464605),
+  'ard-breathe':          albumEmbed(285485492),
+  'ard-ambrosia':         albumEmbed(285485492),
+  'ard-when-words-fail':  albumEmbed(2947464605),
+  'ard-something-real':   albumEmbed(285485492),
 };
 
-export function getBandcampAddition(songId: string): string | undefined {
-  return BANDCAMP_ADDITIONS[songId];
+export function getBandcampEmbed(songId: string): string | undefined {
+  return BANDCAMP_EMBEDS[songId];
 }

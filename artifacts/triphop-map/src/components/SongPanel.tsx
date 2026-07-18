@@ -4,7 +4,7 @@ import { type Song, type Artist } from '@/data/artists';
 import { type PlaylistTrack } from '@/data/playlists';
 import { resolveYouTubeId, checkYouTubeId, markBrokenId, isBrokenId, findAlternativeYouTubeId } from '@/utils/youtubeCheck';
 import { getYtAddition } from '@/data/ytAdditions';
-import { getBandcampAddition } from '@/data/bandcampAdditions';
+import { getBandcampEmbed } from '@/data/bandcampAdditions';
 import { toast } from 'sonner';
 
 interface Props {
@@ -33,8 +33,8 @@ export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Pr
     : getYtAddition(song.id);
   const hasYoutube    = Boolean(resolvedYtId);
   const hasSoundcloud = Boolean(song.soundcloudUrl) && !isPlaceholderSCUrl(song.soundcloudUrl ?? '');
-  const bandcampUrl   = getBandcampAddition(song.id);
-  const hasBandcamp   = Boolean(bandcampUrl);
+  const bandcampEmbed = getBandcampEmbed(song.id);
+  const hasBandcamp   = Boolean(bandcampEmbed);
 
   const [ytError, setYtError]       = useState(false);
   const [ytChecking, setYtChecking] = useState(false);
@@ -292,21 +292,33 @@ export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Pr
                   style={{ height: '166px', border: 'none' }}
                   title={`${song.title} - ${artist.name} (SoundCloud)`}
                 />
+              ) : hasBandcamp ? (
+                <div>
+                  <iframe
+                    src={bandcampEmbed}
+                    className="w-full xerox-border"
+                    style={{ height: '120px', border: 'none' }}
+                    seamless
+                    title={`${song.title} - ${artist.name} (Bandcamp)`}
+                  />
+                  <div className="flex gap-2 mt-2 flex-wrap">
+                    <a href={`https://bandcamp.com/search?q=${encodeURIComponent(artist.name + ' ' + song.title)}`}
+                      target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-[#1da0c3] hover:border-[#1da0c3] transition-colors">
+                      <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M0 18.75l7.437-13.5H24l-7.438 13.5z"/></svg>
+                      Bandcamp
+                    </a>
+                    <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-xs font-mono xerox-border px-3 py-1.5 text-muted-foreground hover:border-accent transition-colors">
+                      <Play className="w-3 h-3" /> YouTube
+                    </a>
+                  </div>
+                </div>
               ) : (
                 <div className="xerox-border p-4 flex flex-col items-center gap-3 text-center">
                   <Music className="w-5 h-5 text-muted-foreground/40" />
                   <p className="text-xs text-muted-foreground font-mono">Belum ada embed tersedia</p>
                   <div className="flex gap-2 flex-wrap justify-center">
-                    {hasBandcamp && (
-                      <a href={bandcampUrl} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-[#1da0c3] hover:border-[#1da0c3] transition-colors">
-                        {/* Bandcamp logo icon */}
-                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M0 18.75l7.437-13.5H24l-7.438 13.5z"/>
-                        </svg>
-                        Listen on Bandcamp
-                      </a>
-                    )}
                     <a href={ytSearchUrl} target="_blank" rel="noopener noreferrer"
                       className="flex items-center gap-2 text-xs font-mono xerox-border px-4 py-2 text-accent hover:border-accent transition-colors">
                       <Play className="w-3.5 h-3.5" /> Search on YouTube
