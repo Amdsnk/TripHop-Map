@@ -3,6 +3,7 @@ import { X, ExternalLink, Music, Layers, Mic, Plus, AlertCircle, Play, Loader2, 
 import { type Song, type Artist } from '@/data/artists';
 import { type PlaylistTrack } from '@/data/playlists';
 import { resolveYouTubeId, checkYouTubeId, markBrokenId, isBrokenId, findAlternativeYouTubeId } from '@/utils/youtubeCheck';
+import { getYtAddition } from '@/data/ytAdditions';
 import { toast } from 'sonner';
 
 interface Props {
@@ -26,7 +27,9 @@ function isPlaceholderSCUrl(url: string) {
 }
 
 export default function SongPanel({ song, artist, onClose, onAddToPlaylist }: Props) {
-  const resolvedYtId  = song.youtubeId ? resolveYouTubeId(song.youtubeId) : undefined;
+  const resolvedYtId  = song.youtubeId
+    ? resolveYouTubeId(song.youtubeId)
+    : getYtAddition(song.id);
   const hasYoutube    = Boolean(resolvedYtId);
   const hasSoundcloud = Boolean(song.soundcloudUrl) && !isPlaceholderSCUrl(song.soundcloudUrl ?? '');
 
