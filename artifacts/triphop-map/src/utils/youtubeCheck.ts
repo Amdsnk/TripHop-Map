@@ -1,6 +1,7 @@
 /** YouTube ID availability check via oEmbed (no API key required, CORS-safe). */
 
 import type { Song } from '@/data/artists';
+import { YT_REPLACEMENTS } from '@/data/ytReplacements';
 
 const CACHE_KEY = 'yt_availability_cache';
 const OVERRIDE_KEY = 'yt_id_overrides';
@@ -96,10 +97,12 @@ export function removeOverride(originalId: string) {
   localStorage.setItem(OVERRIDE_KEY, JSON.stringify(overrides));
 }
 
-/** Resolve a YouTube ID: if there's a user-saved override, return that instead. */
+/** Resolve a YouTube ID: user-saved override → static verified replacement → original. */
 export function resolveYouTubeId(id: string): string {
   const overrides = loadOverrides();
-  return overrides[id] ?? id;
+  if (overrides[id]) return overrides[id];
+  // Fall back to the statically verified replacement map
+  return YT_REPLACEMENTS[id] ?? id;
 }
 
 /** Clear all cached availability results. */

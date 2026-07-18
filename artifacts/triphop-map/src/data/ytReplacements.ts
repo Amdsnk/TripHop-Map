@@ -336,6 +336,77 @@ export const YT_REPLACEMENTS: Record<string, string> = {
 
   // ── Steel Pulse ───────────────────────────────────────────────────────────
   '4j_8IcHGZAI': '4j_8IcHGZAI', // Captain Dread
+
+  // ── Verified replacements for broken IDs (oEmbed-checked 2026-07-18) ──────
+
+  // DJ Krush
+  '4RaONXBBhBM': 'YJr-_BeVBMw',  // Dig This Vibe
+  'bLwv7Dg84zI': 'l4vkouAwuec',  // Trakmasterz
+  'Dn0TZ6LLQ2M': 'UR0AfZoWVFk',  // Meiso
+  'EZRoFUMNxuk': 'fTBdl6WGu2M',  // Void
+  'fKs3e-Bpn1g': 'XNtQswepDYA',  // Ki-Oku
+  'gE57nNalIoQ': 'JqzMJKyASTg',  // Only the Strong Survive
+  'kVrZ2RBK5Kk': 'Zjzc4hve6QM',  // Strictly Turntablized
+  'qYbVYs1Xsjk': 'qaYy-ldpIXc',  // Mu-getsu
+  'CfxM8NKWXW4': 'FX4dOi01AOY',  // Candle Chant
+
+  // Archive
+  '6a6Gg2aJ25Y': 'V6nbFZtxAL4',  // Bullets
+  'z-D6086J0eQ': 'yLuOzNeHw5I',  // Lights
+
+  // UNKLE
+  'b4Wf94B4wFw': 'np25HG13BCg',  // Heaven (War Stories)
+
+  // DJ Shadow
+  'MjkEQTZCU-c': 'eK6bdim2Vuc',  // Napalm Brain / Scatter Brain
+  'FW2VpMG3cAI': 'sN6vPOC9eFg',  // Transmission 1
+
+  // Smoke City
+  'BEADVaXlbYs': 'abzQn-QlmQY',  // Dark Walk
+
+  // Morcheeba
+  'dG8z2y2_x30': 'spHpTNSaaq4',  // Part of the Process
+
+  // Wax Tailor
+  'B9RObaBMbGE': 'LEtlbQnfhxU',  // Seemingly
+  'FgcTZhEdk0':  'qqWn6Sih17k',  // Ungrateful
+
+  // Skylab
+  'Dwbmld6A5IM': '2vjWDz1DLw4',  // Indigo
+  'nbm77eYukao': 'gDT-GZgCV0A',  // Electric Blue
+  'NQHxJ7MQrzQ': '9fKG2z0_Xa0',  // River of Bass
+
+  // Hooverphonic
+  'e-1F44E72dY': 'xVKGXgHDMvQ',  // Mad About You
+  'gfXnHGSktW0': 'VX2BggpPeXE',  // Wardrobe
+  'sL1z5g67g3I': '6EA-MIYY1bg',  // Jackie Cane
+
+  // Bent
+  'FFO2xFL4GUU': 'z71_epXm9fU',  // King Wisp
+  'pSe8kHe6pZs': '8bwKcHuQ6js',  // Invisible Pedestrian
+  'qvzcWhYFzYg': 'b5ULm46uXf8',  // Strictly Bongo
+  'XV4bCGmspsA': 'VSuIdgr66ho',  // An Ordinary Day
+
+  // Wild Bunch
+  'gV0U7nJbZ4s': '9sHcTS9k21E',  // Friends & Countrymen
+  'mMrvOgPkW0w': 's3NhaMVvcWE',  // Late Night Special
+  'yjklXCmWiLE': 'T741gjLy0LM',  // Daydreaming
+  'YH9mBPEXr0I': 'RXQxdj0N-es',  // Be Thankful for What You Got
+  'Zs44a5NuHuQ': 'G9twgyanjIo',  // United
+
+  // Smith & Mighty
+  'iW4fJc5ROAQ': 'Ox1PD6DWWV0',  // The Yeovil Train
+  'k9GhTFuM3G4': 'T9_vgJUylyQ',  // Come On Now
+  'lDRa5l3n9Rg': 'hfLZnNby97c',  // Stay Beautiful
+  'Q1sL5j8OqaA': 'XXF8PhB_PjI',  // Walk On
+  'VPjLhFJBLHk': '-JhwaRYOgxo',  // Big World Small World
+  'x1tXABDkCVc': 'Clx-OKX1y7k',  // Get Real
+
+  // Mono (UK)
+  'wG9Z1s-l1k8': 'RNLKPXhCH1g',  // High Life
+
+  // Howie B
+  'zuN878wHFEU': 'rHicCOAlbgg',  // Allergy
 };
 
 /**
