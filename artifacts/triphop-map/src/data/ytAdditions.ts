@@ -22,6 +22,22 @@ export const YT_ADDITIONS: Record<string, string> = {
 
   // ── Coldcut ───────────────────────────────────────────────────────────────
   'coldcut-people-hold-on': 'JWnIrxky3OQ',        // "Coldcut - People Hold On ft. Lisa Stansfield"
+
+  // ── 9 Lazy 9 ──────────────────────────────────────────────────────────────
+  // Full album upload — Electric Lazyland (1994) contains all these tracks
+  '9lazy9-electric-lazyland': 'LyujDd6oxN8',
+  '9lazy9-mamie':             'LyujDd6oxN8',
+  '9lazy9-love-buzz':         'LyujDd6oxN8',
+  '9lazy9-walk-in-the-sun':   'LyujDd6oxN8',
+  '9lazy9-lazy-day':          'LyujDd6oxN8',
+
+  // ── Air ───────────────────────────────────────────────────────────────────
+  // Moon Safari full album (official) — Talisman is on this album
+  'air-talisman': '3XTV6pkQne0',
+
+  // ── Gotan Project ─────────────────────────────────────────────────────────
+  // La Revancha del Tango full album — Época is track 2
+  'gotan-epoca': 'QybR25RPt-8',
 };
 
 /**
